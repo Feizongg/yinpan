@@ -177,6 +177,13 @@
       }
     }
     // 流年: 该运第 c 年（并附该流年神煞）
+    /* 流年默认选中: 当前年若落在本运十年内则选它, 否则选第一个 */
+    let nowY = new Date().getFullYear(), lnIdx = 0;
+    let lnAll = bz.liuNian || [];
+    for (let k = 0; k < 10; k++) {
+      let yy = lnAll[n * 10 + k];
+      if (yy && yy.year === nowY) { lnIdx = k; break; }
+    }
     let startYear = (bz.qiYunYear || 0) + 10 * n;
     let birthYear = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0);
     let ln = bz.liuNian || [];
@@ -196,12 +203,12 @@
       if (e1) e1.innerHTML = y.year + '<br>' + age + '岁';
       if (e2) {
         e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
-        /* 点流年 → 展开该年 12 流月（流月/流日不再施加神煞）。
-           这里只打 data 标记，点击交给文件末尾的**事件委托**处理 ——
-           与"点击神煞弹释义"同一机制，那套已在真机验证可用；
-           element.onclick 与内联 onclick 在本页 WebView 里都出现过不触发。 */
+        /* 点流年 → 切换该年(并重画流月)。只打标记, 点击交给事件委托 */
         e2.style.cursor = 'pointer';
         e2.setAttribute('data-ln-year', String(y.year | 0));
+        if (e1) e1.setAttribute('data-ln-year', String(y.year | 0));
+        markSel(e1, c === lnIdx);
+        markSel(e2, c === lnIdx);
       }
       /* 流年神煞改到独立一行(liunian3_c), 不再挤在干支格里 */
       let e3 = document.getElementById('liunian3_' + c);
@@ -212,6 +219,15 @@
       }
     }
     data.yunIdx = n;
+    data.lnIdx = lnIdx;
+    /* 流月默认: 选中的流年若是今年 → 按月序选; 否则(起运晚于当前/往年)选第一个月 */
+    let nowM2 = new Date().getMonth() + 1;
+    let selY = lnAll[n * 10 + lnIdx];
+    let lyPick = 0;
+    if (selY && selY.year === nowY) lyPick = (nowM2 >= 2) ? (nowM2 - 2) : (nowM2 + 10);
+    data.lyIdx = lyPick;
+    paintLiuyue(selY ? selY.year : (bz.qiYunYear || nowY), lyPick);
+    hideLiuri();
     void startYear;
   };
 
@@ -225,31 +241,98 @@
     return h + '</div>';
   }
 
-  /** 点流年 → 该年 12 个流月 */
-  window.mingliLiuyue = function (year) {
-    let box = document.getElementById('liuyueBox');
-    if (!box) return;
+  /* 隐藏流日/流时 —— 流月虽默认选中, 但流日要等用户点流月才出现 */
+  function hideLiuri() {
+    let rb = document.getElementById('liuriBox');
+    if (rb) { rb.innerHTML = ''; rb.style.display = 'none'; }
+    let sb = document.getElementById('liushiBox');
+    if (sb) { sb.innerHTML = ''; sb.style.display = 'none'; }
+  }
+
+  /* 选中态统一样式 —— 与大运格一致: 变色 + 加粗 + 灰底 + 内描边 */
+  function markSel(el, on) {
+    if (!el) return;
+    el.style.color = on ? 'var(--c-po)' : '';
+    el.style.fontWeight = on ? 'bold' : '';
+    el.style.background = on ? 'var(--c-gray-bg)' : '';
+    el.style.boxShadow = on ? 'inset 0 0 0 2px var(--c-border)' : '';
+  }
+
+  /** 画出某流年的 12 个流月到常驻表格; pick = 选中第几个月(决定流日) */
+  function paintLiuyue(year, pick) {
     let arr = window.baziLiuYue ? window.baziLiuYue(year) : [];
-    let ri = document.getElementById('liuriBox'), shi = document.getElementById('liushiBox');
-    if (ri) ri.innerHTML = '';
-    if (shi) shi.innerHTML = '';
-    if (!arr.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="ly-title">流月 · ' + year + ' 年（正月起寅）</div>' +
-      lyGrid(arr, 6, function (m) {
-        return '<div class="ly-cell" onclick="mingliLiuri(' + m.solarY + ',' + m.solarM + ',\'' + m.gz + '\')">' +
-          '<div class="ly-gz">' + ganSpan(m.gan) + zhiSpan(m.zhi) + '</div>' +
-          '<div class="ly-sub">' + m.jie + '</div>' +
-          '<div class="ly-sub">' + m.jieM + '/' + m.jieD + '</div></div>';
-      });
+    for (let i = 0; i < 12; i++) {
+      let e1 = document.getElementById('liuyue1_' + i);
+      let e2 = document.getElementById('liuyue2_' + i);
+      let m = arr[i];
+      if (!m) { if (e1) e1.innerHTML = ''; if (e2) e2.innerHTML = ''; continue; }
+      if (e1) {
+        e1.innerHTML = ganSpan(m.gan) + zhiSpan(m.zhi);
+        e1.style.cursor = 'pointer';
+        e1.setAttribute('data-ly-idx', String(i));
+        markSel(e1, i === pick);
+      }
+      if (e2) {
+        e2.innerHTML = '<font class="shishen">' + m.jie + '</font><br>' + m.jieM + '/' + m.jieD;
+        e2.style.cursor = 'pointer';
+        e2.setAttribute('data-ly-idx', String(i));
+      }
+    }
+    return arr;
+  }
+
+  /** 选中某流年(供委托调用): 重画流年高亮 + 流月, 并按默认规则选流月 */
+  window.mingliPickYear = function (year) {
+    let d = window._mlData;
+    if (!d || !d.bz) return;
+    let ln = d.bz.liuNian || [];
+    let hit = -1;
+    for (let i = 0; i < ln.length; i++) { if (ln[i] && ln[i].year === year) { hit = i; break; } }
+    if (hit < 0) return;
+    let yunIdx = Math.floor(hit / 10);
+    if (yunIdx !== d.yunIdx) { window.mingliYun(yunIdx, d); return; }  // 换运 → 走原路径
+    for (let c = 0; c < 10; c++) {
+      let e1 = document.getElementById('liunian1_' + c);
+      let e2 = document.getElementById('liunian2_' + c);
+      let on = ((d.lnIdx || 0) === c);
+      markSel(e1, on); markSel(e2, on);
+    }
+    d.lnIdx = hit % 10;
+    /* 流月默认: 当前年月落在此流年则选对应月, 否则第一个月 */
+    let now = new Date(), nowY = now.getFullYear(), nowM = now.getMonth() + 1;
+    let pick = 0;
+    if (year === nowY) pick = (nowM >= 2) ? (nowM - 2) : (nowM + 10);
+    paintLiuyue(year, pick);
+    d.lyIdx = pick;
+    hideLiuri();
   };
 
+  /** 点流月 → 高亮该月并显示该月流日 */
+  window.mingliPickMonth = function (idx) {
+    let d = window._mlData;
+    if (!d || !d.bz) return;
+    let ln = d.bz.liuNian || [];
+    let cur = ln[(d.yunIdx || 0) * 10 + (d.lnIdx || 0)];
+    if (!cur) return;
+    let arr = window.baziLiuYue ? window.baziLiuYue(cur.year) : [];
+    d.lyIdx = idx;
+    for (let i = 0; i < 12; i++) markSel(document.getElementById('liuyue1_' + i), i === idx);
+    let m = arr[idx];
+    if (!m) return;
+    window.mingliLiuri(m.solarY, m.solarM, m.gz, cur.year);
+  };
+
+  /** 兼容旧入口: 直接给年份 → 选该年 */
+  window.mingliLiuyue = function (year) { window.mingliPickYear(year); };
+
   /** 点流月 → 该节气月内的流日 */
-  window.mingliLiuri = function (y, m, gz) {
+  window.mingliLiuri = function (y, m, gz, lyYear) {
     let box = document.getElementById('liuriBox');
     if (!box) return;
     let arr = window.baziLiuRi ? window.baziLiuRi(y, m, gz) : [];
     let shi = document.getElementById('liushiBox');
-    if (shi) shi.innerHTML = '';
+    if (shi) { shi.innerHTML = ''; shi.style.display = 'none'; }
+    box.style.display = arr.length ? 'block' : 'none';
     if (!arr.length) { box.innerHTML = ''; return; }
     box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + arr.length + ' 天）</div>' +
       lyGrid(arr, 7, function (d) {
@@ -280,9 +363,14 @@
     document.addEventListener('click', function (e) {
       let el = e.target;
       while (el && el !== document.body) {
+        let ly = el.getAttribute && el.getAttribute('data-ly-idx');
+        if (ly !== null && ly !== undefined && ly !== '') {
+          if (window.mingliPickMonth) window.mingliPickMonth(parseInt(ly, 10));
+          return;
+        }
         if (el.getAttribute && el.getAttribute('data-ln-year')) {
           let yy = parseInt(el.getAttribute('data-ln-year'), 10);
-          if (yy && window.mingliLiuyue) window.mingliLiuyue(yy);
+          if (yy && window.mingliPickYear) window.mingliPickYear(yy);
           return;
         }
         el = el.parentNode;
@@ -392,6 +480,13 @@
         /* 颜色说明已上移到主盘内, 见上方 baziMainRows 调用处 */
       }
 
+      /* 操作按钮(移星换斗/天门地户/长生状态) —— 按需求放在交运说明之上 */
+      h += '<TABLE id="btnTable1"><TR>';
+      h += '<TD><div class="btn" id="btn1" onclick="showMingliYixing();mingliBtn(1,window._mlData);">移星换斗</div></TD>';
+      h += '<TD><div class="btn" id="btn3" onclick="mingliBtn(3,window._mlData);">天门地户</div></TD>';
+      h += '<TD><div class="btn" id="btn2" onclick="mingliState();mingliBtn(2,window._mlData);">长生状态</div></TD>';
+      h += '</TR></TABLE>';
+
       /* 交运说明: 置于九宫下方 —— 即原来颜色说明所在的位置 */
       if (bzInfo && window.baziJiaoYunBlock) h += window.baziJiaoYunBlock(bzInfo);
 
@@ -424,16 +519,20 @@
         h += '</TR><TR>';
         for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
         h += '</TR></TABLE>';
-        /* 流月 / 流日 / 流时 三级下钻的容器（三个独立，互不覆盖） */
-        h += '<div id="liuyueBox"></div><div id="liuriBox"></div><div id="liushiBox"></div></div>';
+
+        /* 流月表: 与流年同区、紧接其下(视觉上同一个表), 12 个月正月建寅,
+           由"选中的流年"驱动 —— 常驻显示, 不需点击才出现。 */
+        h += '<TABLE class="pan"><TR><TD class="yunTitle" rowspan="2">流<br>月</TD>';
+        for (let q = 0; q < 12; q++) h += '<TD class="liuyue1" id="liuyue1_' + q + '"></TD>';
+        h += '</TR><TR>';
+        for (let q2 = 0; q2 < 12; q2++) h += '<TD class="liuyue2" id="liuyue2_' + q2 + '"></TD>';
+        h += '</TR></TABLE>';
+
+        /* 流日: 点选流月后才出现(默认隐藏) */
+        h += '<div id="liuyueBox"></div><div id="liuriBox" style="display:none"></div>' +
+             '<div id="liushiBox" style="display:none"></div></div>';
       }
 
-      /* ── ④ #btnTable1 ── */
-      h += '<TABLE id="btnTable1"><TR>';
-      h += '<TD><div class="btn" id="btn1" onclick="showMingliYixing();mingliBtn(1,window._mlData);">移星换斗</div></TD>';
-      h += '<TD><div class="btn" id="btn3" onclick="mingliBtn(3,window._mlData);">天门地户</div></TD>';
-      h += '<TD><div class="btn" id="btn2" onclick="mingliState();mingliBtn(2,window._mlData);">长生状态</div></TD>';
-      h += '</TR></TABLE>';
 
 
       /* ── ⑤ 移星换斗容器 ── */
