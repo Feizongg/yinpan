@@ -161,7 +161,7 @@
       let yr = document.getElementById('dayun_year' + i);
       let on = (i === n);
       if (el) {
-        el.style.color = on ? 'var(--wx-huo)' : '';
+        el.style.color = '';
         el.style.fontWeight = on ? 'bold' : '';
         /* 选中态: 灰底 + 内描边, 清楚标示当前查看的是哪一步大运
            (此前只有文字变色, 在密集的干支格里不够醒目) */
@@ -253,7 +253,8 @@
   /* 选中态统一样式 —— 与大运格一致: 变色 + 加粗 + 灰底 + 内描边 */
   function markSel(el, on) {
     if (!el) return;
-    el.style.color = on ? 'var(--c-po)' : '';
+    /* 不改字色 —— 此前选中变红, 与盘面五行配色打架; 选中只靠 加粗 + 灰底 + 内描边 */
+    el.style.color = '';
     el.style.fontWeight = on ? 'bold' : '';
     el.style.background = on ? 'var(--c-gray-bg)' : '';
     el.style.boxShadow = on ? 'inset 0 0 0 2px var(--c-border)' : '';
@@ -527,7 +528,7 @@
       /* 交运说明: 置于九宫下方 —— 即原来颜色说明所在的位置 */
       if (bzInfo && window.baziJiaoYunBlock) h += window.baziJiaoYunBlock(bzInfo);
       /* 操作提示: 流日默认不显示, 点流月才打开 */
-      h += '<div class="ml-tip">点击对应流月可打开流日功能</div>';
+      h += '<div class="ml-tip">点击对应流月/流日/流时可打开月份，流日，和流时细节功能</div>';
 
       /* ── ③ #dayun_liunian 大运 + 流年(两个独立 TABLE) ── */
       if (bz && bz.dayun && bz.dayun.length) {
@@ -543,7 +544,7 @@
           let dy = bz.dayun[d2], ss = (bz.dayunSS || [])[d2] || '';
           let cur = (d2 === data.yunIdx);
           h += '<TD class="yun2" id="dayun' + d2 + '" onclick="mingliYun(' + d2 + ',window._mlData)"' +
-               (cur ? ' style="font-weight:bold;color:var(--c-po)"' : '') + '>' +
+               (cur ? ' style="font-weight:bold"' : '') + '>' +
                ganSpan(dy.g) + '<br>' + zhiSpan(dy.z) + '<br><font class="shishen">' + ss + '</font></TD>';
         }
         h += '</TR></TABLE>';

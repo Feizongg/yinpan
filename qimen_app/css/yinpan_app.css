@@ -802,4 +802,4 @@ body.mode-mingli{ --pan-fs-sz:20px; --pan-lh-sz:24px }
 .ly-gz{font-size:13px;line-height:17px;font-weight:bold}
 .ly-sub{font-size:10px;line-height:13px;color:var(--c-text-3)}
 /* 命理盘操作提示 */
-.ml-tip{font-size:12px;line-height:18px;color:var(--c-text-3);padding:3px 6px 5px;text-align:center}
+.ml-tip{font-size:13px;line-height:20px;color:var(--c-text-2);padding:3px 6px 5px;text-align:center}
