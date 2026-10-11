@@ -430,9 +430,14 @@
     }
     let arr = window.baziLiuYue ? window.baziLiuYue(cur.year) : [];
     d.lyIdx = idx;
+    /* 按格子里记录的**真实月份序号**高亮 —— 流月靠左排之后, 格子序号 ≠ 月份序号,
+       若用 i === idx 会比错: 点第 1 格(亥月, 序号 9)却去高亮第 10 格。 */
     for (let i = 0; i < 12; i++) {
-      markSel(document.getElementById('liuyue1_' + i), i === idx);
-      markSel(document.getElementById('liuyue2_' + i), i === idx);   /* 节气格同步 */
+      let e1 = document.getElementById('liuyue1_' + i);
+      let e2 = document.getElementById('liuyue2_' + i);
+      let ri = e1 ? parseInt(e1.getAttribute('data-ly-idx'), 10) : NaN;
+      markSel(e1, ri === idx);
+      markSel(e2, ri === idx);   /* 节气格同步 */
     }
     let m = arr[idx];
     if (!m) return;
