@@ -710,7 +710,7 @@
           if (d2 === 0) {
             /* 横排金色标签(与顶部标签同款), 点它切回小运段 */
             h += '<TD class="yun2" id="dayun0" onclick="mingliYun(0,window._mlData)" style="cursor:pointer">' +
-                 '1~' + qyAge + '岁</TD>';
+                 '1~' + qyAge + '<br>岁</TD>';
             continue;
           }
           let dy = dyArr[d2] || {};
