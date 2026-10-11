@@ -356,15 +356,9 @@
         if (bd >= st) { start = i; break; }
       }
     }
-    /* 终点: 该流年若是今年 → 只到当前所在的节气月 */
-    let cap = arr.length, nowD = new Date();
-    if (year === nowD.getFullYear()) {
-      cap = 0;
-      for (let i = arr.length - 1; i >= 0; i--) {
-        let st = new Date(arr[i].solarY, arr[i].solarM - 1, arr[i].jieD);
-        if (nowD >= st) { cap = i + 1; break; }
-      }
-    }
+    /* 终点: 就是该年最后一个流月 —— **不按当前时间截尾**
+       (第三方只在出生年自出生月起算, 其余年份一律完整 12 个月)。 */
+    let cap = arr.length;
     /* 显示的月份**靠左排**: 有几个月就占最左边几格(如出生年只有 亥/子/丑 三个月,
        就填第 1~3 格), 不按它在一年中的原始位置留空档。 */
     let shown = [];
@@ -463,21 +457,8 @@
     if (y === now.getFullYear() && m === now.getMonth() + 1) {
       for (let i = 0; i < arr.length; i++) { if (arr[i].d === now.getDate()) { pick = i; break; } }
     }
-    /* 该月若是当前月 → 只画到今天为止(未来的日子不显示) */
-    let nowD0 = new Date(), capR = arr.length;
-    if (y === nowD0.getFullYear() && m === nowD0.getMonth() + 1) {
-      /* 必须比**完整日期**: 节气月常横跨两个公历月(如戌月 = 10/8~11/6),
-         只比"日"会把次月 1~6 号也算进来。 */
-      capR = 0;
-      let ny = nowD0.getFullYear(), nm = nowD0.getMonth() + 1, nd = nowD0.getDate();
-      for (let i2 = arr.length - 1; i2 >= 0; i2--) {
-        let dd = arr[i2];
-        if (dd.y < ny || (dd.y === ny && dd.m < nm) || (dd.y === ny && dd.m === nm && dd.d <= nd)) {
-          capR = i2 + 1; break;
-        }
-      }
-    }
-    let show = arr.slice(0, capR);
+    /* 整月显示, 不按当前时间截尾 */
+    let show = arr;
     box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + show.length + ' 天）</div>' +
       lyGrid(show, 7, function (d, i) {
         return '<div class="ly-cell" data-lr-idx="' + i + '"' +
@@ -523,14 +504,9 @@
     if (!box) return;
     let arr = window.baziLiuShi ? window.baziLiuShi(y, m, d) : [];
     if (!arr.length) { box.innerHTML = ''; return; }
-    /* 该日若是今天 → 只画到当前时辰为止(未来的时辰不显示) */
-    let nowD1 = new Date(), capS = arr.length;
-    if (y === nowD1.getFullYear() && m === nowD1.getMonth() + 1 && d === nowD1.getDate()) {
-      capS = Math.max(1, Math.floor(nowD1.getHours() / 2) + 1);
-    }
-    let showS = arr.slice(0, capS);
-    box.innerHTML = '<div class="ly-title">流时 · ' + y + '-' + m + '-' + d +
-      (capS < arr.length ? '（至当前时辰）' : '') + '</div>' +
+    /* 十二时辰全显示, 不按当前时间截尾 */
+    let showS = arr;
+    box.innerHTML = '<div class="ly-title">流时 · ' + y + '-' + m + '-' + d + '</div>' +
       lyGrid(showS, 6, function (x) {
         return '<div class="ly-cell"><div class="ly-gz">' + ganSpan(x.gan) + zhiSpan(x.zhi) + '</div>' +
           '<div class="ly-sub">' + String(x.hour).padStart(2, '0') + '时</div></div>';
