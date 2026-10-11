@@ -10,6 +10,7 @@
 #   scripts/build.sh linux [目标]  # Tauri 桌面; 目标默认 "deb,rpm"
 #   scripts/build.sh appimage     # AppImage(含 WebKit 辅助进程路径补丁)
 #   scripts/build.sh appimage --patch-only   # 跳过 linuxdeploy, 只补丁+重打包(CI 用)
+#   scripts/build.sh windows      # Windows 桌面裸 exe(仅 Windows; 等价 CI 的 --no-bundle)
 #   scripts/build.sh android [参数]  # 转 build-android.sh(见 npm run build:android -- --help)
 #   scripts/build.sh all          # bundle + linux + android
 #
@@ -42,6 +43,14 @@ Warn() { echo "   ${C_YELLOW}$*${C_RST}"; }
 Die()  { Bad "$*"; exit 1; }
 
 PY="$(command -v python3 || command -v python || true)"
+
+# Git Bash(MSYS) 下 $ROOT 形如 /d/src/daojiayinpan, 直接作为**参数**传给原生
+# Windows 程序(如 python.exe)会解析失败(MSYS 只在自身 shell 内认这种路径, 不做
+# 引号内文本的自动转换)。需要交给原生程序的文件路径一律先过 to_native。
+# Linux 无 cygpath, 原样返回(2026-10-04 Windows 构建链修复, 踩坑实录见 AGENTS.md)。
+to_native() {
+  if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else printf '%s' "$1"; fi
+}
 
 # 同步 web 资源到 --frontendDist 指向的 web/(tauri.conf.json 写的是 ../web)
 # 原先 build-tauri.sh 与 build-windows.sh 各抄了一份, 这里统一。
@@ -111,9 +120,10 @@ cmd_bundle() {
   # 含 hash → 内联事件属性全废。rebind(qimen_boot.js)只接管事件属性, 管不了
   # <script> 标签本体 —— 必须从源头拒绝。先剥离 HTML 注释再查(注释里
   # 提及 "<script>" 字样是合法的, 不能误报)。
-  if ! python3 -c "
+  [ -n "$PY" ] || Die 'CSP 防回归检查需要 python3(或 python) —— 未找到, 请先安装'
+  if ! "$PY" -c "
 import re, sys
-h = open('$ROOT/qimen_app/yinpan.html', encoding='utf-8').read()
+h = open(r'''$(to_native "$ROOT/qimen_app/yinpan.html")''', encoding='utf-8').read()
 h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
 sys.exit(1 if re.search(r'<script>[^<]', h) else 0)
 "; then
@@ -398,6 +408,20 @@ EOF
   echo "   提示: 目标机无需安装 webkit2gtk-4.1；仍建议装 libfuse2 以便直接双击。"
 }
 
+# ============================ windows (Tauri 桌面, 仅 Windows) ============================
+# Windows 上不产 deb/rpm/AppImage(那是 Linux 链路, 交 CI), 只出裸 app.exe ——
+# 与 CI 的 windows job 完全一致(release.yml: npx tauri build --no-bundle)。
+# 注意 tauri.conf.json 的 bundle.targets 是 deb/rpm/appimage, 故**必须**带 --no-bundle,
+# 否则 Windows 上会因目标格式不适用而失败。
+cmd_windows() {
+  prepare_web
+  Step 'Tauri 编译 (--no-bundle, Windows)'
+  ( cd "$ROOT/src-tauri" && npx tauri build --no-bundle ) || Die 'Tauri 构建失败'
+  Step '完成'
+  ls -lh "$ROOT/src-tauri/target/release/app.exe" 2>/dev/null
+  Info "运行: src-tauri/target/release/app.exe"
+}
+
 # ============================ android ============================
 # Android 那套逻辑(资源准备 + cap sync + 9 项 CI 对齐补丁 + 版本签名 + gradle)
 # 与桌面链路无关, 独立在 build-android.sh, 这里只做转调, 保证 npm run build:android 与
@@ -417,7 +441,7 @@ deploy_web() {
   Step '同步网页版到内网服务器'
   [ -f "$ROOT/scripts/deploy-web.py" ] || { Info '跳过(缺 deploy-web.py)'; return 0; }
   [ -n "$PY" ] || { Info '跳过(缺 python3)'; return 0; }
-  if "$PY" "$ROOT/scripts/deploy-web.py"; then
+  if "$PY" "$(to_native "$ROOT/scripts/deploy-web.py")"; then
     Ok '网页版已同步'
   else
     Warn '同步未成功(不影响构建产物); 单独重试: npm run deploy:web'
@@ -443,6 +467,7 @@ case "${1:-all}" in
   bundle)   shift; cmd_bundle "$@"; [ "$NO_DEPLOY" = 1 ] || deploy_web ;;
   linux)    shift; cmd_linux "$@";  [ "$NO_DEPLOY" = 1 ] || deploy_web ;;
   appimage) shift; cmd_appimage "$@" ;;   # 纯打包, 与网页版无关, 不部署
+  windows)  shift; cmd_windows "$@"; [ "$NO_DEPLOY" = 1 ] || deploy_web ;;
   android)  shift; cmd_android "$@" ;;    # build-android.sh 内部自带部署
   all)
     shift || true

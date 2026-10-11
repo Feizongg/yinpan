@@ -52,25 +52,33 @@ cd "$ROOT"
 # python 解释器(图标生成/版本号解析用): Debian 系叫 python3, 老发行版可能只有 python
 PY="$(command -v python3 || command -v python || true)"
 
+# 判定"目录下存在可执行文件 x" —— Windows 上可执行文件带 .exe 后缀, Git Bash 的 -x
+# 不认无扩展名形式, 故两种都试(2026-10-04 Windows 构建链修复)。
+has_exe() { [ -x "$1" ] || [ -x "$1.exe" ]; }
+
+# Git Bash(MSYS) 下把 POSIX 路径(/d/src/...)转成 Windows 路径, 用于**作为参数**传给
+# 原生 python.exe 的场合 —— MSYS 不转换引号内文本。Linux 无 cygpath 时原样返回。
+to_native() { if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else printf '%s' "$1"; fi; }
+
 # ---------- 0. 环境 ----------
 Step '环境检查'
 # JAVA_HOME: 环境变量优先, 否则探测常见 JDK 安装位置(2026-09-28 升 JDK 27)
-if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-}/bin/javac" ]; then
+if [ -z "${JAVA_HOME:-}" ] || ! has_exe "${JAVA_HOME:-}/bin/javac"; then
   for c in /usr/lib/jvm/java-27-openjdk /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-17-openjdk \
            /usr/lib/jvm/default /usr/lib/jvm/default-java; do
-    [ -x "$c/bin/javac" ] && { JAVA_HOME="$c"; break; }
+    has_exe "$c/bin/javac" && { JAVA_HOME="$c"; break; }
   done
 fi
-[ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/javac" ] \
-  || Die 'JAVA_HOME 未配置或无效 —— Arch: sudo pacman -S jdk21-openjdk'
+[ -n "${JAVA_HOME:-}" ] && has_exe "$JAVA_HOME/bin/javac" \
+  || Die 'JAVA_HOME 未配置或无效 —— Arch: sudo pacman -S jdk-openjdk(27)'
 
-# ANDROID_HOME: 环境变量优先, 否则探测 ~/Android/Sdk
-if [ -z "${ANDROID_HOME:-}" ] || [ ! -x "${ANDROID_HOME:-}/platform-tools/adb" ]; then
-  for c in "$HOME/Android/Sdk" "$HOME/Android/sdk" /opt/android-sdk; do
-    [ -x "$c/platform-tools/adb" ] && { ANDROID_HOME="$c"; break; }
+# ANDROID_HOME: 环境变量优先, 否则探测 ~/.devtool/Android/Sdk(2026-10-02 迁移后位置)与常见路径
+if [ -z "${ANDROID_HOME:-}" ] || ! has_exe "${ANDROID_HOME:-}/platform-tools/adb"; then
+  for c in "$HOME/.devtool/Android/Sdk" "$HOME/Android/Sdk" "$HOME/Android/sdk" /opt/android-sdk; do
+    has_exe "$c/platform-tools/adb" && { ANDROID_HOME="$c"; break; }
   done
 fi
-[ -n "${ANDROID_HOME:-}" ] && [ -x "$ANDROID_HOME/platform-tools/adb" ] \
+[ -n "${ANDROID_HOME:-}" ] && has_exe "$ANDROID_HOME/platform-tools/adb" \
   || Die 'ANDROID_HOME 未配置或无效 —— 需含 platform-tools/adb'
 
 # 让 gradle/node 子进程继承正确环境
@@ -164,7 +172,12 @@ if [ -f "$bg" ]; then
 fi
 
 # 4c) SDK 路径
-printf 'sdk.dir=%s\n' "$ANDROID_HOME" > android/local.properties
+# ⚠️ local.properties 是 **Java Properties** 格式, 反斜杠是转义符: 写成 D:\app\dev\... 会被
+# 解析成 D:appdev...(反斜杠被吞), Gradle 随即报
+# "Could not determine the dependencies of task ':app:compileDebugJavaWithJavac'
+#  > java.io.IOException: 文件名、目录名或卷标语法不正确"。
+# 统一写成正斜杠(Java/AGP 完全接受), Linux 的 /home/... 不受影响(2026-10-04 Windows 修复)。
+printf 'sdk.dir=%s\n' "$(printf '%s' "$ANDROID_HOME" | tr '\\' '/')" > android/local.properties
 Ok 'local.properties 已写入 sdk.dir'
 
 # ---------- 5. CI 对齐补丁 ----------

@@ -44,7 +44,7 @@ adb=''
 resolve_adb() {
   [ -n "$adb" ] && return 0
   local c
-  for c in "${ANDROID_HOME:-}/platform-tools/adb" "$HOME/Android/Sdk/platform-tools/adb"; do
+  for c in "${ANDROID_HOME:-}/platform-tools/adb" "$HOME/.devtool/Android/Sdk/platform-tools/adb" "$HOME/Android/Sdk/platform-tools/adb"; do
     [ -n "$c" ] && [ -x "$c" ] && { adb="$c"; break; }
   done
   [ -n "$adb" ] || adb="$(command -v adb || true)"

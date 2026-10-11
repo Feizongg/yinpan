@@ -27,7 +27,7 @@ need() {  # need <命令> <pacman 包名> <说明>
 Step '基础工具'
 need node   nodejs        'Node.js'
 need npm    npm           'npm'
-need java   jdk21-openjdk 'JDK (java)'
+need java   jdk-openjdk  'JDK (java)'
 
 Step 'JDK'
 if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-}/bin/javac" ]; then
@@ -40,13 +40,13 @@ if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/javac" ]; then
   Info '提示: 新开终端才会自动带上; 本脚本内已导出给后续步骤'
   export JAVA_HOME
 else
-  Bad 'JAVA_HOME 未配置且未找到 JDK —— sudo pacman -S jdk21-openjdk'
-  missingPkgs+=(jdk21-openjdk)
+  Bad 'JAVA_HOME 未配置且未找到 JDK —— sudo pacman -S jdk-openjdk'
+  missingPkgs+=(jdk-openjdk)
 fi
 
 Step 'Android SDK'
 if [ -z "${ANDROID_HOME:-}" ] || [ ! -x "${ANDROID_HOME:-}/platform-tools/adb" ]; then
-  for c in "$HOME/Android/Sdk" "$HOME/Android/sdk" /opt/android-sdk; do
+  for c in "$HOME/.devtool/Android/Sdk" "$HOME/Android/Sdk" "$HOME/Android/sdk" /opt/android-sdk; do
     [ -x "$c/platform-tools/adb" ] && { ANDROID_HOME="$c"; break; }
   done
 fi
@@ -59,12 +59,12 @@ else
   Bad 'ANDROID_HOME 未配置或无效(缺 platform-tools/adb)'
   cat <<'TIP'
    安装方式(无需 root):
-     mkdir -p ~/Android/Sdk/cmdline-tools
+     mkdir -p ~/.devtool/Android/Sdk/cmdline-tools
      curl -L -o /tmp/clt.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-     unzip -q /tmp/clt.zip -d /tmp/clt && mv /tmp/clt/cmdline-tools ~/Android/Sdk/cmdline-tools/latest
+     unzip -q /tmp/clt.zip -d /tmp/clt && mv /tmp/clt/cmdline-tools ~/.devtool/Android/Sdk/cmdline-tools/latest
    然后把它加进 shell 环境:
-     set -gx ANDROID_HOME $HOME/Android/Sdk
-     set -gx ANDROID_SDK_ROOT $HOME/Android/Sdk
+     set -gx ANDROID_HOME $HOME/.devtool/Android/Sdk
+     set -gx ANDROID_SDK_ROOT $HOME/.devtool/Android/Sdk
 TIP
   ANDROID_HOME=''
 fi
@@ -106,16 +106,18 @@ else
 import importlib.util
 # 模块名 → 缺失时给出的安装包名
 mods = [('svglib', 'python-svglib'), ('reportlab', 'python-reportlab'),
-        ('PIL', 'python-pillow'), ('rlPyCairo', 'pip install rlPyCairo')]
+        ('PIL', 'python-pillow'), ('rlPyCairo', 'pip install rlPyCairo'),
+        ('freetype', 'pip install "freetype-py<2.4"')]
 print(', '.join(p for m, p in mods if importlib.util.find_spec(m) is None))
 PYEOF
 )"
   if [ -z "$lack" ]; then
-    Ok '图标生成依赖齐备(svglib / reportlab / Pillow / rlPyCairo)'
+    Ok '图标生成依赖齐备(svglib / reportlab / Pillow / rlPyCairo / freetype-py)'
   else
     Warn "缺少: $lack"
     Info 'Arch: sudo pacman -S python-svglib python-reportlab python-pillow python-cairo'
-    Info '      python3 -m pip install --user --break-system-packages rlPyCairo'
+    Info '      reportlab 的 renderPM 还需要 pip 装 rlPyCairo 与 freetype-py<2.4(仓库无)'
+    Info '      python3 -m pip install --user --break-system-packages rlPyCairo "freetype-py<2.4"'
   fi
 fi
 
