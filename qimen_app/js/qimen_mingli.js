@@ -221,7 +221,7 @@
         let e2 = document.getElementById('liunian2_' + c2);
         let e3 = document.getElementById('liunian3_' + c2);
         if (c2 >= cnt) {                       /* 超出实际年数的格子一律清空 */
-          if (e1) { e1.innerHTML = ''; markSel(e1, false); }
+          if (e1) { e1.innerHTML = ''; markSel(e1, false); e1.removeAttribute('data-ln-year'); e1.style.cursor = ''; }
           if (e2) { e2.innerHTML = ''; markSel(e2, false); e2.removeAttribute('data-ln-year'); e2.style.cursor = ''; }
           if (e3) e3.innerHTML = '';
           continue;
@@ -229,7 +229,12 @@
         let yy = by + c2;
         let gz = (window.tyme && window.tyme.SixtyCycleYear)
           ? window.tyme.SixtyCycleYear.fromYear(yy).getSixtyCycle().getName() : '';
-        if (e1) e1.innerHTML = yy + '<br>' + (c2 + 1) + '岁';
+        /* 年份标签行与干支行**行为一致**: 两者都带 data-ln-year 且可点 */
+        if (e1) {
+          e1.innerHTML = yy + '<br>' + (c2 + 1) + '岁';
+          e1.style.cursor = 'pointer';
+          e1.setAttribute('data-ln-year', String(yy));
+        }
         if (e2) {
           e2.innerHTML = ganSpan(gz.charAt(0)) + zhiSpan(gz.charAt(1));
           e2.style.cursor = 'pointer';
