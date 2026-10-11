@@ -568,26 +568,26 @@
         let n = Math.min(bz.dayun.length, 10);
 
         h += '<div id="dayun_liunian"><TABLE class="pan">';
-        let xyList = window.baziXiaoYun && data.bzFull
-          ? window.baziXiaoYun(data.bzFull.pillars, data.gender, 10) : [];
-        h += '<TR><TD class="yunTitle" rowspan="3">大<br>运</TD>';
+        h += '<TR><TD class="yunTitle" rowspan="2">大<br>运</TD>';
+        /* 第 1 格固定为「小运」段(起运前) —— 与第三方同构: 该格只标"小运"二字,
+           值行给出起运前的岁数区间; 从第 2 格起才是各步大运。 */
+        let qyAge = (bz.qiYunYear || 0) - (window.Y || bz.qiYunYear || 0);
+        if (!(qyAge > 0)) qyAge = 1;
         for (let d = 0; d < n; d++) {
-          h += '<TD class="yun1" id="dayun_year' + d + '">' + (bz.qiYunYear + d * 10) + '</TD>';
+          h += '<TD class="yun1" id="dayun_year' + d + '">' +
+               (d === 0 ? '小运' : (bz.qiYunYear + (d - 1) * 10)) + '</TD>';
         }
         h += '</TR><TR>';
         for (let d2 = 0; d2 < n; d2++) {
+          if (d2 === 0) {
+            h += '<TD class="yun2" id="dayun0">1~' + qyAge + '岁</TD>';
+            continue;
+          }
           let dy = bz.dayun[d2], ss = (bz.dayunSS || [])[d2] || '';
           let cur = (d2 === data.yunIdx);
           h += '<TD class="yun2" id="dayun' + d2 + '" onclick="mingliYun(' + d2 + ',window._mlData)"' +
                (cur ? ' style="font-weight:bold"' : '') + '>' +
                ganSpan(dy.g) + '<br>' + zhiSpan(dy.z) + '<br><font class="shishen">' + ss + '</font></TD>';
-        }
-        h += '</TR>';
-        /* 小运行: 并入大运表内(最左列为标签列, 与大运同格式), 列第 1~10 岁的小运干支 */
-        h += '<TR><TD class="yunTitle">小<br>运</TD>';
-        for (let x = 0; x < n; x++) {
-          let gz = xyList[x] || '';
-          h += '<TD class="xiaoyun">' + (gz ? ganSpan(gz[0]) + '<br>' + zhiSpan(gz[1]) : '') + '</TD>';
         }
         h += '</TR></TABLE>';
 
