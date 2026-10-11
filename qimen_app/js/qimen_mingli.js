@@ -309,11 +309,25 @@
   /** 画出某流年的 12 个流月到常驻表格; pick = 选中第几个月(决定流日) */
   function paintLiuyue(year, pick) {
     let arr = window.baziLiuYue ? window.baziLiuYue(year) : [];
+    /* 该流年若是今年 → 只画到"当前所在的节气月"为止, **有几个月显示几个月**,
+       未来的月份一律不显示(与流年"有几年显示几年"同一规则)。 */
+    let cap = arr.length, nowD = new Date();
+    if (year === nowD.getFullYear()) {
+      cap = 0;
+      for (let i = arr.length - 1; i >= 0; i--) {
+        let st = new Date(arr[i].solarY, arr[i].solarM - 1, arr[i].jieD);
+        if (nowD >= st) { cap = i + 1; break; }
+      }
+    }
     for (let i = 0; i < 12; i++) {
       let e1 = document.getElementById('liuyue1_' + i);
       let e2 = document.getElementById('liuyue2_' + i);
       let m = arr[i];
-      if (!m) { if (e1) e1.innerHTML = ''; if (e2) e2.innerHTML = ''; continue; }
+      if (!m || i >= cap) {
+        if (e1) { e1.innerHTML = ''; markSel(e1, false); e1.removeAttribute('data-ly-idx'); }
+        if (e2) { e2.innerHTML = ''; markSel(e2, false); e2.removeAttribute('data-ly-idx'); }
+        continue;
+      }
       if (e1) {
         e1.innerHTML = ganSpan(m.gan) + zhiSpan(m.zhi);
         e1.style.cursor = 'pointer';
@@ -398,8 +412,23 @@
     if (y === now.getFullYear() && m === now.getMonth() + 1) {
       for (let i = 0; i < arr.length; i++) { if (arr[i].d === now.getDate()) { pick = i; break; } }
     }
-    box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + arr.length + ' 天）</div>' +
-      lyGrid(arr, 7, function (d, i) {
+    /* 该月若是当前月 → 只画到今天为止(未来的日子不显示) */
+    let nowD0 = new Date(), capR = arr.length;
+    if (y === nowD0.getFullYear() && m === nowD0.getMonth() + 1) {
+      /* 必须比**完整日期**: 节气月常横跨两个公历月(如戌月 = 10/8~11/6),
+         只比"日"会把次月 1~6 号也算进来。 */
+      capR = 0;
+      let ny = nowD0.getFullYear(), nm = nowD0.getMonth() + 1, nd = nowD0.getDate();
+      for (let i2 = arr.length - 1; i2 >= 0; i2--) {
+        let dd = arr[i2];
+        if (dd.y < ny || (dd.y === ny && dd.m < nm) || (dd.y === ny && dd.m === nm && dd.d <= nd)) {
+          capR = i2 + 1; break;
+        }
+      }
+    }
+    let show = arr.slice(0, capR);
+    box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + show.length + ' 天）</div>' +
+      lyGrid(show, 7, function (d, i) {
         return '<div class="ly-cell" data-lr-idx="' + i + '"' +
           ' data-lr-y="' + d.y + '" data-lr-m="' + d.m + '" data-lr-d="' + d.d + '">' +
           '<div class="ly-gz">' + ganSpan(d.gan) + zhiSpan(d.zhi) + '</div>' +
@@ -443,8 +472,15 @@
     if (!box) return;
     let arr = window.baziLiuShi ? window.baziLiuShi(y, m, d) : [];
     if (!arr.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="ly-title">流时 · ' + y + '-' + m + '-' + d + '</div>' +
-      lyGrid(arr, 6, function (x) {
+    /* 该日若是今天 → 只画到当前时辰为止(未来的时辰不显示) */
+    let nowD1 = new Date(), capS = arr.length;
+    if (y === nowD1.getFullYear() && m === nowD1.getMonth() + 1 && d === nowD1.getDate()) {
+      capS = Math.max(1, Math.floor(nowD1.getHours() / 2) + 1);
+    }
+    let showS = arr.slice(0, capS);
+    box.innerHTML = '<div class="ly-title">流时 · ' + y + '-' + m + '-' + d +
+      (capS < arr.length ? '（至当前时辰）' : '') + '</div>' +
+      lyGrid(showS, 6, function (x) {
         return '<div class="ly-cell"><div class="ly-gz">' + ganSpan(x.gan) + zhiSpan(x.zhi) + '</div>' +
           '<div class="ly-sub">' + String(x.hour).padStart(2, '0') + '时</div></div>';
       });
