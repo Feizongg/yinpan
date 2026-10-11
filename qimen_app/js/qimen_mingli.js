@@ -188,6 +188,39 @@
     let birthYear = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0);
     let ln = bz.liuNian || [];
     let curYunGz = gzOfYun(n);
+    /* 小运段(n=0): 流年只有起运前那几年 —— **有几年显示几年**, 不凑满十年;
+       小运段也不施加神煞(与流月/流日同规)。 */
+    if (n === 0) {
+      let by = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+      let cnt = Math.max(0, Math.min(10, (bz.qiYunYear || by) - by));
+      for (let c2 = 0; c2 < 10; c2++) {
+        let e1 = document.getElementById('liunian1_' + c2);
+        let e2 = document.getElementById('liunian2_' + c2);
+        let e3 = document.getElementById('liunian3_' + c2);
+        if (c2 >= cnt) {                       /* 超出实际年数的格子一律清空 */
+          if (e1) { e1.innerHTML = ''; markSel(e1, false); }
+          if (e2) { e2.innerHTML = ''; markSel(e2, false); e2.removeAttribute('data-ln-year'); e2.style.cursor = ''; }
+          if (e3) e3.innerHTML = '';
+          continue;
+        }
+        let yy = by + c2;
+        let gz = (window.tyme && window.tyme.SixtyCycleYear)
+          ? window.tyme.SixtyCycleYear.fromYear(yy).getSixtyCycle().getName() : '';
+        if (e1) e1.innerHTML = yy + '<br>' + (c2 + 1) + '岁';
+        if (e2) {
+          e2.innerHTML = ganSpan(gz.charAt(0)) + zhiSpan(gz.charAt(1));
+          e2.style.cursor = 'pointer';
+          e2.setAttribute('data-ln-year', String(yy));
+          markSel(e1, false); markSel(e2, false);
+        }
+        if (e3) e3.innerHTML = '';
+      }
+      data.yunIdx = n;
+      data.lnIdx = 0;
+      paintLiuyue(by, 0);
+      hideLiuri();
+      return;
+    }
     for (let c = 0; c < 10; c++) {
       let y = ln[n * 10 + c];
       let e1 = document.getElementById('liunian1_' + c);
