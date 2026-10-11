@@ -236,6 +236,19 @@
      口径见 qimen_bazi.js 的 baziLiuYue/Ri/Shi。
      按需求：流月与流日**不施加神煞**（仅列干支与节气/日期）。 */
 
+  /* 展开新表后把它滚进视野 —— 流日/流时都在下方, 不滚用户看不到。
+     老 WebView 可能不支持 options 形式, 退回无参调用; 整体 try 兜底。 */
+  function scrollIntoViewSoon(el) {
+    if (!el) return;
+    setTimeout(function () {
+      try {
+        if (el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (e) {
+        try { el.scrollIntoView(); } catch (e2) { /* 忽略 */ }
+      }
+    }, 40);
+  }
+
   function lyGrid(arr, cols, cellFn) {
     let h = '<div class="ly-grid' + (cols === 7 ? ' ly-grid7' : '') + '">';
     arr.forEach(function (x, i) { h += cellFn(x, i); });
@@ -360,6 +373,7 @@
           '<div class="ly-sub">' + d.m + '/' + d.d + '</div></div>';
       });
     window.mingliPickDay(pick, true);      // 默认高亮, 但不展开时辰
+    scrollIntoViewSoon(box);               // 展开后自动滚进视野
   };
 
   /** 点流日 → 高亮该日(silent=true 时不展开流时) */
@@ -401,6 +415,7 @@
         return '<div class="ly-cell"><div class="ly-gz">' + ganSpan(x.gan) + zhiSpan(x.zhi) + '</div>' +
           '<div class="ly-sub">' + String(x.hour).padStart(2, '0') + '时</div></div>';
       });
+    scrollIntoViewSoon(box);               // 展开后自动滚进视野
   };
 
   /* 事件委托：点带 data-ln-year 的流年格 → 展开该年流月。
