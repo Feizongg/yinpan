@@ -62,6 +62,13 @@
     try { bz = window.computeBaZiDaYun({ year: year, month: month, day: day, hour: hour, gender: gender }); }
     catch (e) { if (window._logErr) window._logErr('mingli.bazi', e && e.message); }
 
+    /* 完整八字盘（含四柱 pillars 的纳音等）—— 大运/流年神煞要按"本命四柱 + 运年干支"
+       一起判定，光有 computeBaZiDaYun 的结果不够；点击释义也需要 pillars。 */
+    let bzFull = null;
+    try {
+      bzFull = window.baziChart({ year: year, month: month, day: day, hour: hour, minute: minute, gender: gender });
+    } catch (e) { if (window._logErr) window._logErr('mingli.baziFull', e && e.message); }
+
     // 四柱 —— qimenChart 的 sizhu 是**对象**(与 chuanRenChart 的字符串不同)
     let gzOf = function (k) { return dec(qr.sizhu && qr.sizhu[k] && qr.sizhu[k].ganZhi); };
     let siZhu = { nian: gzOf('y'), yue: gzOf('m'), ri: gzOf('d'), shi: gzOf('h') };
@@ -80,7 +87,7 @@
     let shengXiao = SX[ZHI.indexOf(siZhu.nian[1])] || '';
 
     return {
-      qr: qr, bz: bz, sizhu: siZhu, gender: gender, shengXiao: shengXiao,
+      qr: qr, bz: bz, bzFull: bzFull, sizhu: siZhu, gender: gender, shengXiao: shengXiao,
       name: opts.name || '未知',
       kong: kong,
       yueJiang: dec(qr.yueJiang),
@@ -129,7 +136,24 @@
     if (n < 0) n = 0;
     if (n >= bz.dayun.length) n = bz.dayun.length - 1;
 
-    // 大运格高亮
+    /* 大运/流年神煞：按「本命四柱 + 运/年干支」判定。
+       规则表里本就含 大运干(5)/流年干(6)/大运支(11)/流年支(12)/大运柱(19) 位置码，
+       此前"盘面暂只用四柱"，这里把运年槽位启用起来。 */
+    let full = data.bzFull;
+    function shaCalc(gz, lnGz) {
+      if (!window.baziYunShenSha || !full || !full.pillars || !gz) return { yun: [], ln: [] };
+      try { return window.baziYunShenSha(full.pillars, data.gender, gz, lnGz); }
+      catch (e) { return { yun: [], ln: [] }; }
+    }
+    function gzOfYun(k) { let o = bz.dayun[k] || {}; return o.gz || ((o.g || '') + (o.z || '')); }
+    function shaLine(arr) {
+      if (!arr || !arr.length) return '';
+      return '<div style="font-size:10px;line-height:1.25;color:var(--c-text-3)">' +
+        arr.slice(0, 3).map(function (s) { return window.termSpan ? window.termSpan('神煞', s) : s; })
+          .join('·') + '</div>';
+    }
+
+    // 大运格高亮 + 悬停显示该运神煞
     for (let i = 0; i < 10; i++) {
       let el = document.getElementById('dayun' + i);
       let yr = document.getElementById('dayun_year' + i);
@@ -141,6 +165,8 @@
            (此前只有文字变色, 在密集的干支格里不够醒目) */
         el.style.background = on ? 'var(--c-gray-bg)' : '';
         el.style.boxShadow = on ? 'inset 0 0 0 2px var(--c-border)' : '';
+        let list = shaCalc(gzOfYun(i), null).yun;
+        el.title = list.length ? ('大运神煞：' + list.join('、')) : '';
       }
       if (yr) {
         yr.style.background = on ? 'var(--c-gray-bg)' : '';
@@ -148,10 +174,11 @@
         yr.style.fontWeight = on ? 'bold' : '';
       }
     }
-    // 流年: 该运第 c 年
+    // 流年: 该运第 c 年（并附该流年神煞）
     let startYear = (bz.qiYunYear || 0) + 10 * n;
     let birthYear = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0);
     let ln = bz.liuNian || [];
+    let curYunGz = gzOfYun(n);
     for (let c = 0; c < 10; c++) {
       let y = ln[n * 10 + c];
       let e1 = document.getElementById('liunian1_' + c);
@@ -159,7 +186,10 @@
       if (!y) { if (e1) e1.innerHTML = ''; if (e2) e2.innerHTML = ''; continue; }
       let age = birthYear ? (y.year - birthYear + 1) : '';
       if (e1) e1.innerHTML = y.year + '<br>' + age + '岁';
-      if (e2) e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
+      if (e2) {
+        e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z) +
+          shaLine(shaCalc(curYunGz, (y.g || '') + (y.z || '')).ln);
+      }
     }
     data.yunIdx = n;
     void startYear;

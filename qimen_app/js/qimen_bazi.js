@@ -49,7 +49,7 @@
   let WX_SHENG = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };  // 生
   let WX_KE = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };     // 克
 
-  /* ── 神煞规则表（问真口径）────────────────────────────────────
+  /* ── 神煞规则表（第三方验证口径）────────────────────────────────────
      位置码: 1年干 2月干 3日干 4时干 | 7年支 8月支 9日支 10时支
              13年柱 14月柱 15日柱 16时柱(=23~26) | 17年纳音 20月纳音 21日纳音 22时纳音
              5大运干 6流年干 11大运支 12流年支 19大运柱 (引擎支持, 盘面暂只用四柱)
@@ -130,12 +130,18 @@
     { n:'正词馆', m:[17], t:[14,15,16,19], x:0, d:{金:'壬申',木:'庚寅',水:'癸亥',土:'丁亥',火:'乙巳'} },
     { n:'天德贵人', m:[8], t:[7,8,9,10,11], x:0, d:{子:'巳',卯:'申',午:'亥',酉:'寅'} },
     { n:'天德合', m:[8], t:[7,8,9,10,11], x:0, d:{子:'申',卯:'巳',午:'寅',酉:'亥'} },
+    /* 空亡：年柱旬空与日柱旬空分别判定（各拆两支两条规则），
+       且不查自己那一柱 —— 第三方验证规则表即如此组织 */
+    { n:'空亡', m:[13], t:[8,9,10,11,12], x:0, d:{甲子:'戌',乙丑:'戌',丙寅:'戌',丁卯:'戌',戊辰:'戌',己巳:'戌',庚午:'戌',辛未:'戌',壬申:'戌',癸酉:'戌',甲戌:'申',乙亥:'申',丙子:'申',丁丑:'申',戊寅:'申',己卯:'申',庚辰:'申',辛巳:'申',壬午:'申',癸未:'申',甲申:'午',乙酉:'午',丙戌:'午',丁亥:'午',戊子:'午',己丑:'午',庚寅:'午',辛卯:'午',壬辰:'午',癸巳:'午',甲午:'辰',乙未:'辰',丙申:'辰',丁酉:'辰',戊戌:'辰',己亥:'辰',庚子:'辰',辛丑:'辰',壬寅:'辰',癸卯:'辰',甲辰:'寅',乙巳:'寅',丙午:'寅',丁未:'寅',戊申:'寅',己酉:'寅',庚戌:'寅',辛亥:'寅',壬子:'寅',癸丑:'寅',甲寅:'子',乙卯:'子',丙辰:'子',丁巳:'子',戊午:'子',己未:'子',庚申:'子',辛酉:'子',壬戌:'子',癸亥:'子'} },
+    { n:'空亡', m:[15], t:[7,8,10,11,12], x:0, d:{甲子:'戌',乙丑:'戌',丙寅:'戌',丁卯:'戌',戊辰:'戌',己巳:'戌',庚午:'戌',辛未:'戌',壬申:'戌',癸酉:'戌',甲戌:'申',乙亥:'申',丙子:'申',丁丑:'申',戊寅:'申',己卯:'申',庚辰:'申',辛巳:'申',壬午:'申',癸未:'申',甲申:'午',乙酉:'午',丙戌:'午',丁亥:'午',戊子:'午',己丑:'午',庚寅:'午',辛卯:'午',壬辰:'午',癸巳:'午',甲午:'辰',乙未:'辰',丙申:'辰',丁酉:'辰',戊戌:'辰',己亥:'辰',庚子:'辰',辛丑:'辰',壬寅:'辰',癸卯:'辰',甲辰:'寅',乙巳:'寅',丙午:'寅',丁未:'寅',戊申:'寅',己酉:'寅',庚戌:'寅',辛亥:'寅',壬子:'寅',癸丑:'寅',甲寅:'子',乙卯:'子',丙辰:'子',丁巳:'子',戊午:'子',己未:'子',庚申:'子',辛酉:'子',壬戌:'子',癸亥:'子'} },
+    { n:'空亡', m:[13], t:[8,9,10,11,12], x:0, d:{甲子:'亥',乙丑:'亥',丙寅:'亥',丁卯:'亥',戊辰:'亥',己巳:'亥',庚午:'亥',辛未:'亥',壬申:'亥',癸酉:'亥',甲戌:'酉',乙亥:'酉',丙子:'酉',丁丑:'酉',戊寅:'酉',己卯:'酉',庚辰:'酉',辛巳:'酉',壬午:'酉',癸未:'酉',甲申:'未',乙酉:'未',丙戌:'未',丁亥:'未',戊子:'未',己丑:'未',庚寅:'未',辛卯:'未',壬辰:'未',癸巳:'未',甲午:'巳',乙未:'巳',丙申:'巳',丁酉:'巳',戊戌:'巳',己亥:'巳',庚子:'巳',辛丑:'巳',壬寅:'巳',癸卯:'巳',甲辰:'卯',乙巳:'卯',丙午:'卯',丁未:'卯',戊申:'卯',己酉:'卯',庚戌:'卯',辛亥:'卯',壬子:'卯',癸丑:'卯',甲寅:'丑',乙卯:'丑',丙辰:'丑',丁巳:'丑',戊午:'丑',己未:'丑',庚申:'丑',辛酉:'丑',壬戌:'丑',癸亥:'丑'} },
+    { n:'空亡', m:[15], t:[7,8,10,11,12], x:0, d:{甲子:'亥',乙丑:'亥',丙寅:'亥',丁卯:'亥',戊辰:'亥',己巳:'亥',庚午:'亥',辛未:'亥',壬申:'亥',癸酉:'亥',甲戌:'酉',乙亥:'酉',丙子:'酉',丁丑:'酉',戊寅:'酉',己卯:'酉',庚辰:'酉',辛巳:'酉',壬午:'酉',癸未:'酉',甲申:'未',乙酉:'未',丙戌:'未',丁亥:'未',戊子:'未',己丑:'未',庚寅:'未',辛卯:'未',壬辰:'未',癸巳:'未',甲午:'巳',乙未:'巳',丙申:'巳',丁酉:'巳',戊戌:'巳',己亥:'巳',庚子:'巳',辛丑:'巳',壬寅:'巳',癸卯:'巳',甲辰:'卯',乙巳:'卯',丙午:'卯',丁未:'卯',戊申:'卯',己酉:'卯',庚戌:'卯',辛亥:'卯',壬子:'卯',癸丑:'卯',甲寅:'丑',乙卯:'丑',丙辰:'丑',丁巳:'丑',戊午:'丑',己未:'丑',庚申:'丑',辛酉:'丑',壬戌:'丑',癸亥:'丑'} },
   ];
 
-  /* 输出顺序（问真 ssSequenceList 序，去掉空亡） */
+  /* 输出顺序（第三方验证顺序表序，去掉空亡） */
   let SS_ORDER = [
     '天乙贵人', '太极贵人', '文昌', '天德贵人', '月德贵人',
-    '三奇贵人', '福星贵人', '德秀贵人', '天厨贵人', '国印',
+    '三奇贵人', '空亡', '福星贵人', '德秀贵人', '天厨贵人', '国印',
     '天德合', '月德合', '天罗地网', '天罗', '地网',
     '十恶大败', '阴差阳错', '天赦日', '十灵日', '六秀日',
     '四废日', '孤鸾煞', '勾绞煞', '红艳', '童子',
@@ -146,19 +152,24 @@
     '八专日', '九丑日', '元辰', '魁罡', '孤辰',
     '寡宿', '流霞', '亡神', '劫煞', '灾煞',
     '血刃', '飞刃', '羊刃',
-    /* 以下 4 个为本项目特有、问真规则表无对应条目，暂无判定规则（保留输出序位）*/
+    /* 以下 4 个为本项目特有、第三方验证规则表无对应条目，暂无判定规则（保留输出序位）*/
     '六厄', '大耗', '隔角', '五鬼',
   ];
 
-  /* ── 神煞判定引擎（问真口径）──────────────────────────────────
+  /* ── 神煞判定引擎（第三方验证口径）──────────────────────────────────
      规则：以 m 所指位置取值 → 查 d 表得目标 → 在 t 所指位置中查找；
-     t 不含 m 自身（问真 tags 即如此，避免"自己比自己"，例如将星子局在子，
+     t 不含 m 自身（第三方验证 tags 即如此，避免"自己比自己"，例如将星子局在子，
      年支取的将星不会标回年柱）；t 为空的规则属"名单类"（魁罡/十恶大败/
      九丑日…）：main 值命中 d 的键即成立。 */
   function ssVal(code, C) {
     if (code >= 1 && code <= 4) return C.g[code - 1];
+    if (code === 5) return C.g[4] || '';      // 大运干（仅传 extra 时存在）
+    if (code === 6) return C.g[5] || '';      // 流年干
     if (code >= 7 && code <= 10) return C.z[code - 7];
+    if (code === 11) return C.z[4] || '';     // 大运支
+    if (code === 12) return C.z[5] || '';     // 流年支
     if (code >= 13 && code <= 16) return C.gz[code - 13];
+    if (code === 19) return C.gz[4] || '';    // 大运柱
     if (code >= 23 && code <= 26) return C.gz[code - 23];
     if (code === 17 || code === 20 || code === 21 || code === 22) {
       /* 纳音类规则(学堂/词馆/天罗/地网/童子煞/正学堂/正词馆)的 data 键是五行，
@@ -167,7 +178,7 @@
       let ny = C.ny[k];
       return ny ? ny.slice(-1) : '';
     }
-    if (code === 18) return C.g.join('');   // 天干(跨柱)：三奇贵人
+    if (code === 18) return C.g.slice(0, 4).join('');  // 天干(跨柱)：三奇贵人，只取四柱干
     return '';
   }
   function ssPillar(code) {
@@ -179,45 +190,103 @@
     if (code === 20) return 1;
     if (code === 21) return 2;
     if (code === 22) return 3;
+    /* 运/年槽位：4 = 大运、5 = 流年（仅在传入 extra 时有效） */
+    if (code === 5 || code === 11 || code === 19) return 4;
+    if (code === 6 || code === 12) return 5;
     return -1;
   }
-  function shenShaOf(pillars, gender) {
+  function shenShaOf(pillars, gender, extra) {
     let C = {
       g: pillars.map(function (p) { return p.gan; }),
       z: pillars.map(function (p) { return p.zhi; }),
       gz: pillars.map(function (p) { return p.gz; }),
       ny: pillars.map(function (p) { return p.naYin; })
     };
-    let out = [[], [], [], []], seen = [{}, {}, {}, {}];
+    /* extra: { yunGz:'甲子', lnGz:'乙丑' } —— 把神煞算到大运/流年上。
+       第三方验证规则表的位置码本就含 大运干(5)/流年干(6)/大运支(11)/流年支(12)/
+       大运柱(19)，此前只是"盘面暂只用四柱"，这里把槽位补上即可。 */
+    if (extra) {
+      let yg = String(extra.yunGz || ''), lg = String(extra.lnGz || '');
+      C.g = C.g.concat([yg.charAt(0), lg.charAt(0)]);
+      C.z = C.z.concat([yg.charAt(1), lg.charAt(1)]);
+      C.gz = C.gz.concat([yg]);
+    }
+    let top = extra ? 5 : 3;
+    let out = [[], [], [], [], [], []], seen = [{}, {}, {}, {}, {}, {}];
     function mark(pi, n) {
-      if (pi < 0 || pi > 3 || seen[pi][n]) return;
+      if (pi < 0 || pi > top || seen[pi][n]) return;
       seen[pi][n] = 1;
       out[pi].push(n);
     }
+    /* x 字段的语义是"用哪张表"，不是直接等于性别：第三方验证规则里
+       x=1 对应「阳男·阴女」、x=2 对应「阴男·阳女」，以**年干阴阳**判定。
+       例（已对第三方服务端实测吻合）：元辰在辛丑(阴)年 —— 男命取 x=2 那张表
+       (丑→午)，女命取 x=1 那张表(丑→申)。 */
+    let tableNo = (('甲丙戊庚壬'.indexOf(C.g[0]) >= 0) === (gender === '男')) ? 1 : 2;
     SS_RULES.forEach(function (r) {
-      if (r.x === 1 && gender !== '男') return;
-      if (r.x === 2 && gender !== '女') return;
+      if (r.x && r.x !== tableNo) return;
       r.m.forEach(function (mc) {
         let key = ssVal(mc, C);
-        if (!key || !(key in r.d)) return;
+        if (!key) return;
+        /* 取值命中查表：常规与名单类是"键 == 值"；跨柱天干串(mc=18，如三奇贵人)
+           的键只有 3 个字，而值是四柱天干的 4 字串，故改为**子串匹配**。 */
+        let hit = (key in r.d) ? key : '';
+        if (!hit && mc === 18) {
+          for (let k in r.d) if (key.indexOf(k) >= 0) { hit = k; break; }
+        }
+        if (!hit) return;
         if (!r.t.length) {
-          /* 名单类：键即答案。三奇贵人(m=18) 在四柱天干串里找连续三干，标在起始柱 */
-          if (mc === 18) mark(C.g.join('').indexOf(key), r.n);
+          /* 名单类：键即答案。三奇贵人标在**末柱**——第三方验证实测：
+             壬癸辛出现在年/月/日干时，三奇贵人标在日柱而非年柱。 */
+          if (mc === 18) mark(key.indexOf(hit) + hit.length - 1, r.n);
           else mark(ssPillar(mc), r.n);
           return;
         }
-        let target = r.d[key];
+        let target = r.d[hit];
         if (!target) return;
         r.t.forEach(function (tc) {
-          if (tc === mc) return;                 // 避免自比（问真 tags 不含 main）
+          if (tc === mc) return;                 // 避免自比（第三方验证 tags 不含 main）
           let val = ssVal(tc, C);
           if (val && target.indexOf(val) >= 0) mark(ssPillar(tc), r.n);
         });
       });
     });
+    /* 同柱互斥：正学堂命中时抑制学堂、正词馆命中时抑制词馆。
+       依据第三方服务端实测：年纳音金 → 学堂巳、正学堂辛巳；当月柱为辛巳时
+       服务端只报「正学堂」不报「学堂」（干支全匹配的更高层次覆盖仅地支匹配的那条）。 */
+    out.forEach(function (arr) {
+      [['正学堂', '学堂'], ['正词馆', '词馆']].forEach(function (pair) {
+        let i = arr.indexOf(pair[1]);
+        if (i >= 0 && arr.indexOf(pair[0]) >= 0) arr.splice(i, 1);
+      });
+    });
     return out.map(function (arr) {
       return SS_ORDER.filter(function (n) { return arr.indexOf(n) >= 0; });
     });
+  }
+
+  /**
+   * 供命理盘调用：算「某一步大运」与「某个流年」落在本命局上的神煞。
+   * 四柱之外的位置（大运干支、流年干支）由 extra 槽位提供，
+   * 规则表里的 大运干/支、流年干/支 条目因此得以生效。
+   * @param pillars 四柱数组(baziChart 的 bz.pillars，需含 gan/zhi/gz/naYin)
+   * @param gender  '男'|'女'
+   * @param yunGz   大运干支，如 '甲子'（可空）
+   * @param lnGz    流年干支，如 '乙丑'（可空）
+   * @returns {{yun:string[], ln:string[]}}
+   */
+  window.baziYunShenSha = function (pillars, gender, yunGz, lnGz) {
+    if (!pillars || !pillars.length) return { yun: [], ln: [] };
+    let all = shenShaOf(pillars, gender, { yunGz: yunGz, lnGz: lnGz });
+    return { yun: all[4] || [], ln: all[5] || [] };
+  };
+
+  /* 十神简称 → 全名：盘面显示用简称（印/劫/杀），点释义要用全名做键 */
+  function tenFull(short) {
+    if (!short) return short;
+    if (SHISHEN_ABBR[short] !== undefined) return short;          // 本身已是全名
+    for (let full in SHISHEN_ABBR) { if (SHISHEN_ABBR[full] === short) return full; }
+    return short;
   }
 
   /* 纳音用字统一: tyme 作"霹雳火/砂中金", 本盘按通行写法作"霹雷火/沙中金" */
@@ -269,7 +338,7 @@
       };
     });
 
-    /* ── 神煞（问真口径：以规则表 SS_RULES 统一判定，见上方引擎）── */
+    /* ── 神煞（第三方验证口径：以规则表 SS_RULES 统一判定，见上方引擎）── */
     let ssAll = shenShaOf(pillars, gender);
     pillars.forEach(function (p, i) { p.sha = ssAll[i]; });
 
@@ -388,7 +457,12 @@
     let rc = rowCls ? ' class="' + rowCls + '"' : '';
     /* 十神 */
     h += '<TR' + rc + ' style="height:25px"><TD style="color:var(--c-gold);line-height:25px">十神</TD>';
-    bz.pillars.forEach(function (p) { h += '<TD class="shiShen">' + p.shiShen + '</TD>'; });
+    bz.pillars.forEach(function (p) {
+      /* "日元"不是十神，不参与点击释义 */
+      let t = (window.termSpan && p.shiShen && p.shiShen !== '日元')
+        ? window.termSpan('十神', tenFull(p.shiShen)) : p.shiShen;
+      h += '<TD class="shiShen">' + t + '</TD>';
+    });
     h += '</TR>';
     /* 干支(命理主盘已自带四柱, 那边传 withGz=false 跳过) */
     if (withGz) {
@@ -407,20 +481,30 @@
         h += '<font style="color:' + GAN_COLOR[GAN.indexOf(c.gan)] + '">' + c.gan + '</font>' +
              (i === p.cang.length - 1 ? '<br>' : '');
       });
-      h += '<font class="ganShen">' + p.cang.map(function (c) { return c.shen; }).join('') + '</font></TD>';
+      h += '<font class="ganShen">' + p.cang.map(function (c) {
+        return window.termSpan ? window.termSpan('十神', tenFull(c.shen)) : c.shen;
+      }).join('') + '</font></TD>';
     });
     h += '</TR>';
     /* 纳音 / 地势 / 自坐 / 空亡 */
-    [['纳音', 'naYin'], ['地势', 'diShi'], ['自坐', 'ziZuo'], ['空亡', 'kong']].forEach(function (row) {
-      h += '<TR' + rc + '><TD style="color:var(--c-gold)">' + row[0] + '</TD>';
-      bz.pillars.forEach(function (p) { h += '<TD>' + p[row[1]] + '</TD>'; });
-      h += '</TR>';
-    });
+    /* 纳音 → 纳音释义；地势/自坐 → 十二长生释义；空亡是"戌亥"这类组合，不做点击 */
+    [['纳音', 'naYin', '纳音'], ['地势', 'diShi', '长生'], ['自坐', 'ziZuo', '长生'], ['空亡', 'kong', '']]
+      .forEach(function (row) {
+        h += '<TR' + rc + '><TD style="color:var(--c-gold)">' + row[0] + '</TD>';
+        bz.pillars.forEach(function (p) {
+          let v = p[row[1]];
+          h += '<TD>' + ((row[2] && window.termSpan) ? window.termSpan(row[2], v) : v) + '</TD>';
+        });
+        h += '</TR>';
+      });
     /* 神煞 */
     h += '<TR' + rc + '><TD style="color:var(--c-gold);line-height:15px">神煞<br></TD>';
     bz.pillars.forEach(function (p) {
       h += '<TD class="shenShaTd"><div class="ssDiv shensha">';
-      p.sha.forEach(function (s) { h += '<span>' + s + '</span><br>'; });
+      /* 名词可点击弹出释义；qimen_click_tips.js 未加载时退回纯文本 */
+      p.sha.forEach(function (s) {
+        h += (window.termSpan ? window.termSpan('神煞', s) : '<span>' + s + '</span>') + '<br>';
+      });
       h += '</div></TD>';
     });
     h += '</TR>';
