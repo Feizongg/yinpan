@@ -568,7 +568,9 @@
         let n = Math.min(bz.dayun.length, 10);
 
         h += '<div id="dayun_liunian"><TABLE class="pan">';
-        h += '<TR><TD class="yunTitle" rowspan="2">大<br>运</TD>';
+        let xyList = window.baziXiaoYun && data.bzFull
+          ? window.baziXiaoYun(data.bzFull.pillars, data.gender, 10) : [];
+        h += '<TR><TD class="yunTitle" rowspan="3">大<br>运</TD>';
         for (let d = 0; d < n; d++) {
           h += '<TD class="yun1" id="dayun_year' + d + '">' + (bz.qiYunYear + d * 10) + '</TD>';
         }
@@ -591,6 +593,13 @@
            此前塞在干支格(liunian2)里, 空间不足会与相邻内容重叠。 */
         h += '</TR><TR>';
         for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
+        h += '</TR>';
+        /* 小运行: 并入大运表最左侧(与大运同格式), 列出第 1~10 岁的小运干支 */
+        h += '<TR><TD class="yunTitle">小<br>运</TD>';
+        for (let x = 0; x < n; x++) {
+          let gz = xyList[x] || '';
+          h += '<TD class="xiaoyun">' + (gz ? ganSpan(gz[0]) + '<br>' + zhiSpan(gz[1]) : '') + '</TD>';
+        }
         h += '</TR></TABLE>';
 
         /* 流月表: 与流年同区、紧接其下(视觉上同一个表), 12 个月正月建寅,

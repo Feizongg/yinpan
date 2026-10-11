@@ -49,6 +49,70 @@
   let WX_SHENG = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };  // 生
   let WX_KE = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };     // 克
 
+  /* ── 人元司令（月令分野）────────────────────────────────────
+     按月支给出"当令藏干"及其天数(自立节起算)，通行口径：
+     如寅月立春后 戊7日 → 丙7日 → 甲16日。 */
+  let RYSL = {
+    '寅': [['戊', 7], ['丙', 7], ['甲', 16]],
+    '卯': [['甲', 10], ['乙', 20]],
+    '辰': [['乙', 9], ['癸', 3], ['戊', 18]],
+    '巳': [['戊', 5], ['庚', 9], ['丙', 16]],
+    '午': [['丙', 10], ['己', 9], ['丁', 11]],
+    '未': [['丁', 9], ['乙', 3], ['己', 18]],
+    '申': [['戊', 7], ['壬', 7], ['庚', 16]],
+    '酉': [['庚', 10], ['辛', 20]],
+    '戌': [['辛', 9], ['丁', 3], ['戊', 18]],
+    '亥': [['戊', 7], ['甲', 7], ['壬', 16]],
+    '子': [['壬', 10], ['癸', 20]],
+    '丑': [['癸', 9], ['辛', 3], ['己', 18]]
+  };
+  /* 十二节在 SolarTerm.fromIndex 里的索引(实测 0=冬至, 3=立春, 每节 +2) */
+  let JIE_IDX = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 1];
+
+  /* 出生日距"最近一个不晚于它的十二节"的天数(当天记 1) */
+  function jieDays(t, y, mo, d) {
+    let bd = new Date(y, mo - 1, d), best = null;
+    [y - 1, y, y + 1].forEach(function (yy) {
+      for (let k = 0; k < 12; k++) {
+        let term = t.SolarTerm.fromIndex(yy, JIE_IDX[k]);
+        let st = term.getJulianDay().getSolarTime();
+        let jd = new Date(st.getYear(), st.getMonth() - 1, st.getDay());
+        if (jd <= bd && (!best || jd > best)) best = jd;
+      }
+    });
+    return best ? Math.floor((bd - best) / 86400000) + 1 : 1;
+  }
+  /** 人元司令：返回当令的那个藏干(天干) */
+  function siLingOf(t, y, mo, d, yueZhi) {
+    let arr = RYSL[yueZhi];
+    if (!arr) return '';
+    let days = jieDays(t, y, mo, d), acc = 0;
+    for (let i = 0; i < arr.length; i++) {
+      acc += arr[i][1];
+      if (days <= acc) return arr[i][0];
+    }
+    return arr[arr.length - 1][0];
+  }
+
+  /**
+   * 小运：阳男阴女顺行、阴男阳女逆行；自**月柱**起，一年一位。
+   * 传统上用于起运之前那些年(通常 1 岁到起运岁)。
+   * @returns string[]  第 1 岁、第 2 岁… 的小运干支
+   */
+  window.baziXiaoYun = function (pillars, gender, cnt) {
+    if (!pillars || pillars.length < 2) return [];
+    let GAN = '甲乙丙丁戊己庚辛壬癸', ZHI = '子丑寅卯辰巳午未申酉戌亥';
+    let yang = '甲丙戊庚壬'.indexOf(pillars[0].gan) >= 0;
+    let fwd = (yang === (gender === '男'));
+    let g0 = GAN.indexOf(pillars[1].gan), z0 = ZHI.indexOf(pillars[1].zhi);
+    let out = [];
+    for (let i = 1; i <= (cnt || 10); i++) {
+      let k = fwd ? i : -i;
+      out.push(GAN[((g0 + k) % 10 + 10) % 10] + ZHI[((z0 + k) % 12 + 12) % 12]);
+    }
+    return out;
+  };
+
   /* ── 神煞规则表（第三方验证口径）────────────────────────────────────
      位置码: 1年干 2月干 3日干 4时干 | 7年支 8月支 9日支 10时支
              13年柱 14月柱 15日柱 16时柱(=23~26) | 17年纳音 20月纳音 21日纳音 22时纳音
@@ -524,6 +588,8 @@
       mingGong: ec.getOwnSign().getName(), mingGongNaYin: naYin(ec.getOwnSign().getSound()),
       shenGong: ec.getBodySign().getName(), shenGongNaYin: naYin(ec.getBodySign().getSound()),
       wangXiang: wangXiang.join(''),
+      /* 人元司令: 月支中当令的藏干(按出生日距本月节气的天数分野) */
+      siLing: siLingOf(t, y, mo, d, SC[1].getEarthBranch().getName()),
       birthGZYear: birthGZYear,
       jiaoYun: jiaoYun,
       dayun: dayun, curYun: curYun, curFortune: curFortune
@@ -593,13 +659,15 @@
       h += '</div></TD>';
     });
     h += '</TR>';
-    /* 胎元 命宫 身宫 旺相休囚死 */
+    /* 胎元 命宫 身宫 旺相休囚死 司令(人元司令) */
     h += '<TR' + rc + '><TD style="color:var(--c-gold)">胎元</TD><TD style="color:var(--c-gold)">命宫</TD>' +
-         '<TD style="color:var(--c-gold)">身宫</TD><TD colspan="2" style="color:var(--c-gold)">旺相休囚死</TD></TR>';
+         '<TD style="color:var(--c-gold)">身宫</TD><TD style="color:var(--c-gold)">旺相休囚死</TD>' +
+         '<TD style="color:var(--c-gold)">司令</TD></TR>';
     h += '<TR' + rc + '><TD class="gong">' + bz.taiYuan + '<br><font>' + bz.taiYuanNaYin + '</font></TD>' +
          '<TD class="gong">' + bz.mingGong + '<br><font>' + bz.mingGongNaYin + '</font></TD>' +
          '<TD class="gong">' + bz.shenGong + '<br><font>' + bz.shenGongNaYin + '</font></TD>' +
-         '<TD colspan="2">' + bz.wangXiang + '</TD></TR>';
+         '<TD>' + bz.wangXiang + '</TD>' +
+         '<TD>' + (bz.siLing || '') + '</TD></TR>';
     /* 颜色说明(命理主盘把它插在交运之前, 八字盘不传则无此行) */
     if (tipHtml) h += '<TR' + rc + '><TD colspan="5" class="bz-tip">' + tipHtml + '</TD></TR>';
     /* 交运: 命理主盘把它移到九宫下方(skipJy=true), 八字盘留在主盘内 */
