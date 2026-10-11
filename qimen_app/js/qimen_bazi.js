@@ -458,9 +458,9 @@
     /* 十神 */
     h += '<TR' + rc + ' style="height:25px"><TD style="color:var(--c-gold);line-height:25px">十神</TD>';
     bz.pillars.forEach(function (p) {
-      /* "日元"不是十神，不参与点击释义 */
+      /* "日元"不是十神，不参与点击释义；显示仍用盘面惯例的简称(label) */
       let t = (window.termSpan && p.shiShen && p.shiShen !== '日元')
-        ? window.termSpan('十神', tenFull(p.shiShen)) : p.shiShen;
+        ? window.termSpan('十神', tenFull(p.shiShen), '', p.shiShen) : p.shiShen;
       h += '<TD class="shiShen">' + t + '</TD>';
     });
     h += '</TR>';
@@ -482,7 +482,8 @@
              (i === p.cang.length - 1 ? '<br>' : '');
       });
       h += '<font class="ganShen">' + p.cang.map(function (c) {
-        return window.termSpan ? window.termSpan('十神', tenFull(c.shen)) : c.shen;
+        /* 同上：键用全名、显示用简称，藏干行的字距是按简称排的 */
+        return window.termSpan ? window.termSpan('十神', tenFull(c.shen), '', c.shen) : c.shen;
       }).join('') + '</font></TD>';
     });
     h += '</TR>';

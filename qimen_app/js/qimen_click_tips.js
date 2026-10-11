@@ -94,13 +94,33 @@
     if (btn) btn.onclick = function () { ov.style.display = 'none'; };
   };
 
-  /* 给盘面里的名词生成可点击 span（渲染侧统一走这里，保证样式一致） */
-  window.termSpan = function (cat, name, colorStyle) {
-    var has = (window.QM && window.QM[CATS[cat] ? CATS[cat].table : ''] &&
-               window.QM[CATS[cat].table][name]);
-    var st = 'cursor:pointer;' + (colorStyle || '');
+  /* 盘面上神煞名词的吉凶着色 —— 与释义表里的 jx 严格一致，
+     用的是一套独立的"语义色"变量(不是五行色, 免得绿=木/红=火与吉凶混淆)。 */
+  var JX_COLOR = {
+    '吉': 'var(--sha-ji,#2e7d32)',
+    '凶': 'var(--sha-xiong,#c62828)',
+    '中': 'var(--sha-ping,#7a7a7a)'
+  };
+
+  /* 给盘面里的名词生成可点击 span（渲染侧统一走这里，保证样式一致）
+     name  = 释义表的键（可能是全名，如"正官"）
+     label = 盘面上显示的文字（可省；省略则同 name）。
+     十神这类"表里键为全名、盘面显示简称"的，靠 label 保住原有显示。 */
+  window.termSpan = function (cat, name, colorStyle, label) {
+    var cfg = CATS[cat] || CATS['神煞'];
+    var table = (window.QM && window.QM[cfg.table]) || null;
+    var item = table ? table[name] : null;
+    var st = 'cursor:pointer;';
+    var attr = '';
+    if (cfg.showJX && item && item.jx && JX_COLOR[item.jx]) {
+      st += 'color:' + JX_COLOR[item.jx] + ';' + (item.jx === '吉' ? 'font-weight:bold;' : '');
+      attr = ' title="' + esc(item.jx) + '·' + esc(name) + '"';
+    } else if (!item) {
+      attr = ' title="暂无释义"';
+    }
+    if (colorStyle) st += colorStyle;
     return '<span class="term-tap" style="' + st + '" data-term-cat="' + esc(cat) + '" data-term-name="' +
-      esc(name) + '"' + (has ? '' : ' title="暂无释义"') + '>' + esc(name) + '</span>';
+      esc(name) + '"' + attr + '>' + esc(label || name) + '</span>';
   };
 
   /* 事件委托：任何带 data-term-name 的元素被点击都会弹释义

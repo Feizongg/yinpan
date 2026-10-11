@@ -43,6 +43,9 @@
   --wx-tu:#795548;        /* 土 棕 */
   --wx-jin:#f9a825;       /* 金 橙 */
   --wx-shui:#0d47a1;      /* 水 蓝 */
+  --sha-ji:#2e7d32;       /* 神煞·吉 */
+  --sha-xiong:#c62828;    /* 神煞·凶 */
+  --sha-ping:#7a7a7a;     /* 神煞·平 */
 }
 /* 四害着色(JS 输出 span 类) */
 .cx-xing{color:var(--c-xing)}
@@ -412,8 +415,8 @@ span[id^="kong"]{font-size:28px!important;font-weight:bold!important;color:var(-
 .bz-pan .sizhuTd{font-size:20px;line-height:24px;font-weight:bold;padding-top:7px;padding-bottom:7px}
 .bz-pan .cangGanTd{letter-spacing:3px;line-height:15px;padding:5px 3px}
 .bz-pan .ganShen{color:var(--c-text-3);font-size:13px;letter-spacing:4px}
-.bz-pan .shenShaTd{font-size:13px;line-height:20px;padding:2px;color:#8c5201;vertical-align:top}
-.bz-pan .ssDiv{text-align:center;font-size:13px;line-height:20px}
+.bz-pan .shenShaTd{font-size:15px;line-height:23px;padding:3px 2px;color:#8c5201;vertical-align:top}
+.bz-pan .ssDiv{text-align:center;font-size:15px;line-height:23px}
 .bz-pan .gong{line-height:15px;padding-top:5px;padding-bottom:3px}
 .bz-pan .gong font{font-size:12px;color:var(--c-text-3)}
 .bz-pan #jiaoYun{font-size:13px;color:var(--c-text-2);text-align:left;line-height:20px;padding:5px;font-family:Arial,sans-serif}
@@ -424,6 +427,7 @@ span[id^="kong"]{font-size:28px!important;font-weight:bold!important;color:var(-
 .bz-pan .gz font{color:var(--c-text-3);font-weight:normal;font-size:12px}
 @media (prefers-color-scheme: dark){
   .bz-pan .shenShaTd{color:#c9a063}
+  :root{--sha-ji:#66bb6a;--sha-xiong:#ef5350;--sha-ping:#9e9e9e}
 }
 
 /* ══════ 命理主盘结构优化: 小标签内联 + 分区底色 ══════ */
@@ -454,7 +458,7 @@ span[id^="kong"]{font-size:28px!important;font-weight:bold!important;color:var(-
 #headTable .cangGanTd{font-size:16px;line-height:1.35;letter-spacing:2px;padding:4px 3px}
 #headTable .ganShen{font-size:12px;line-height:16px;letter-spacing:2px}
 /* 神煞: 条目密集, 比正文小一档 */
-#headTable .shenShaTd,#headTable .ssDiv{font-size:13px;line-height:18px;padding:3px 2px}
+#headTable .shenShaTd,#headTable .ssDiv{font-size:15px;line-height:21px;padding:4px 2px}
 /* 纳音等附属小字 */
 #headTable .gong font{font-size:11px;line-height:15px}
 /* 交运说明: 整句文字, 用说明行同级 13px */
@@ -468,7 +472,7 @@ span[id^="kong"]{font-size:28px!important;font-weight:bold!important;color:var(-
   #headTable #datetime{font-size:12px!important}
   #headTable .cangGanTd{font-size:14px;letter-spacing:1.5px}
   #headTable .ganShen{font-size:11px;letter-spacing:1.5px}
-  #headTable .shenShaTd,#headTable .ssDiv{font-size:12px;line-height:17px}
+  #headTable .shenShaTd,#headTable .ssDiv{font-size:14px;line-height:20px}
   #headTable #jiaoYun{font-size:12px;line-height:19px}
 }
 
