@@ -95,7 +95,9 @@
       /** 当前外圈: 'none' | 1..4(神将) | 'tmdh' | 'state' | 1|3(移星换斗) */
       ringKind: 'none',
       /** 当前高亮的大运序号 */
-      yunIdx: (bz && bz.curDY) || 0,
+      /* 用 baziChart 的 curYun —— 它与 DOM 的 dayun0..9 同基准(下标 0 = 小运段)。
+         computeBaZiDaYun 的 curDY 没有小运段, 直接拿来索引会整体早一步(实测多数盘如此)。 */
+      yunIdx: (bzFull && bzFull.curYun) || 0,
     };
   };
 
@@ -186,11 +188,13 @@
     // 流年: 该运第 c 年（并附该流年神煞）
     /* 流年默认选中: 当前年若落在本运十年内则选它, 否则选第一个 */
     let nowY = new Date().getFullYear(), lnIdx = 0;
-    let lnAll = bz.liuNian || [];
-    for (let k = 0; k < 10; k++) {
-      let yy = lnAll[n * 10 + k];
-      if (yy && yy.year === nowY) { lnIdx = k; break; }
-    }
+    /* 用**本段首年**推算当前年落在第几格 —— 与 DOM/流月/流日同源。
+       (ln 数组在下方才生成, 此处不可引用; 也绝不能再用 bz.liuNian,
+        那是 computeBaZiDaYun 的口径、起运年算错, 会导致高亮的流年与
+        下方流月整表不是同一年、点流月展出的流日又是第三年。) */
+    let segStartY = (data.bzFull && data.bzFull.dayun && data.bzFull.dayun[n])
+      ? (data.bzFull.dayun[n].year || 0) : 0;
+    if (segStartY && nowY >= segStartY && nowY < segStartY + 10) lnIdx = nowY - segStartY;
     let startYear = (bz.qiYunYear || 0) + 10 * n;
     let birthYear = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0);
     /* 流年: 由**该步大运的起始年**推算 —— 弃用 bz.liuNian(computeBaZiDaYun),
@@ -210,7 +214,10 @@
     /* 小运段(n=0): 流年只有起运前那几年 —— **有几年显示几年**, 不凑满十年;
        小运段也不施加神煞(与流月/流日同规)。 */
     if (n === 0) {
-      let by = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+      /* 用**干支年** birthGZYear: 立春前出生时它比公历年小 1; 用公历年会让小运段少一年,
+         且末格与第一步大运的年份标签重叠。 */
+      let by = (data.bzFull && data.bzFull.birthGZYear) ||
+               ((data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0);
       /* 年数含起运年本身: 如 1992 生、1993 起运 → 1992/1993 共 2 年(1~2 岁)。
          起运年优先取 baziChart 的交运年 —— computeBaZiDaYun 的 qiYunYear 会给出出生年,
          用它会把小运段算少一年。 */
@@ -259,7 +266,8 @@
       }
       data.yunIdx = n;
       data.lnIdx = pickLn;
-      paintLiuyue(by + pickLn, 0);      /* 流月随选中的流年走 */
+      /* 传 -1 走默认(出生年自出生月起); 传 0 会落到未显示的寅月 → 12 格无一高亮 */
+      paintLiuyue(by + pickLn, -1);
       hideLiuri();
       return;
     }
@@ -298,7 +306,7 @@
     data.lnIdx = lnIdx;
     /* 流月默认: 选中的流年若是今年 → 按月序选; 否则(起运晚于当前/往年)选第一个月 */
     let nowM2 = new Date().getMonth() + 1;
-    let selY = lnAll[n * 10 + lnIdx];
+    let selY = ln[lnIdx];
     let lyPick = 0;
     if (selY && selY.year === nowY) lyPick = (nowM2 >= 2) ? (nowM2 - 2) : (nowM2 + 10);
     /* 不得早于该流年的起始月(出生年自出生月起) */
@@ -416,7 +424,8 @@
     if (!d || !d.bz) return;
     /* ① 小运段的流年来自"起运前那些年", **不在** d.bz.liuNian 里 —— 必须单独识别:
           否则点它们毫无反应, 或(交运年与首步大运重叠时)被当成大运段的年份而跳段。 */
-    let by0 = (d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+    let by0 = (d.bzFull && d.bzFull.birthGZYear) ||
+              ((d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0);
     let qyY0 = (d.bzFull && d.bzFull.jiaoYun && d.bzFull.jiaoYun.year) || d.bz.qiYunYear || by0;
     let cnt0 = Math.max(0, Math.min(10, qyY0 - by0 + 1));
     if ((d.yunIdx || 0) === 0 && cnt0 > 0 && year >= by0 && year < by0 + cnt0) {
@@ -728,8 +737,9 @@
         /* 小运段岁数区间 = 1 ~ N 岁, N = 起运年 − 出生年 + 1(与流年表年数同源);
            起运年取 baziChart 的交运年, 不用 computeBaZiDaYun 的 qiYunYear(会给出生年)。 */
         let qyYr0 = (data.bzFull && data.bzFull.jiaoYun && data.bzFull.jiaoYun.year) || bz.qiYunYear || 0;
-        let qyAge = qyYr0 - (window.Y || qyYr0) + 1;
-        if (!(qyAge > 0)) qyAge = 1;
+        let byR0 = (data.bzFull && data.bzFull.birthGZYear) || window.Y || qyYr0;
+        /* 与流年表年数同源, 并受同样的 10 格上限约束(否则标签写"1~11岁"而表只有 10 格) */
+        let qyAge = Math.max(1, Math.min(10, qyYr0 - byR0 + 1));
         for (let d = 0; d < n; d++) {
           /* 首格(小运段)与大运格一样可点 —— 小运/大运来回切换, 选中态同款 */
           h += '<TD class="yun1" id="dayun_year' + d + '"' +
@@ -764,7 +774,6 @@
            此前塞在干支格(liunian2)里, 空间不足会与相邻内容重叠。 */
         h += '</TR><TR>';
         for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
-        h += '</TR>';
         h += '</TR></TABLE>';
 
         /* 流月表: 与流年同区、紧接其下(视觉上同一个表), 12 个月正月建寅,
