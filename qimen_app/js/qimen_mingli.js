@@ -193,7 +193,19 @@
     }
     let startYear = (bz.qiYunYear || 0) + 10 * n;
     let birthYear = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0);
-    let ln = bz.liuNian || [];
+    /* 流年: 由**该步大运的起始年**推算 —— 弃用 bz.liuNian(computeBaZiDaYun),
+       它把起运年算错(2006-10-12 盘给 2009, 而实际交运 2015),
+       而 bzFull.dayun 已与第三方逐项对拍一致。 */
+    let dySeg = (data.bzFull && data.bzFull.dayun) ? data.bzFull.dayun[n] : null;
+    let ln = [];
+    if (dySeg) {
+      for (let i5 = 0; i5 < 10; i5++) {
+        let yy5 = (dySeg.year || 0) + i5;
+        let gz5 = (window.tyme && window.tyme.SixtyCycleYear)
+          ? window.tyme.SixtyCycleYear.fromYear(yy5).getSixtyCycle().getName() : '';
+        ln.push({ year: yy5, gz: gz5, g: gz5.charAt(0), z: gz5.charAt(1) });
+      }
+    }
     let curYunGz = gzOfYun(n);
     /* 小运段(n=0): 流年只有起运前那几年 —— **有几年显示几年**, 不凑满十年;
        小运段也不施加神煞(与流月/流日同规)。 */
@@ -247,7 +259,8 @@
       return;
     }
     for (let c = 0; c < 10; c++) {
-      let y = ln[n * 10 + c];
+      /* ln 现在就是"该段的 10 个流年"(按段起始年生成), 故直接用 c 索引 */
+    let y = ln[c];
       let e1 = document.getElementById('liunian1_' + c);
       let e2 = document.getElementById('liunian2_' + c);
       if (!y) {
@@ -358,6 +371,9 @@
     }
     /* 终点: 就是该年最后一个流月 —— **不按当前时间截尾**
        (第三方只在出生年自出生月起算, 其余年份一律完整 12 个月)。 */
+    /* 未指定(或越界) → 选第一个**显示的**月; 出生年自出生月起, 传 0 会落空 */
+    if (pick === undefined || pick === null || pick < 0) pick = start;
+    if (window._mlData) window._mlData.lyIdx = pick;
     let cap = arr.length;
     /* 显示的月份**靠左排**: 有几个月就占最左边几格(如出生年只有 亥/子/丑 三个月,
        就填第 1~3 格), 不按它在一年中的原始位置留空档。 */
@@ -393,25 +409,45 @@
   window.mingliPickYear = function (year) {
     let d = window._mlData;
     if (!d || !d.bz) return;
-    let ln = d.bz.liuNian || [];
-    let hit = -1;
-    for (let i = 0; i < ln.length; i++) { if (ln[i] && ln[i].year === year) { hit = i; break; } }
-    if (hit < 0) return;
-    let yunIdx = Math.floor(hit / 10);
-    if (yunIdx !== d.yunIdx) { window.mingliYun(yunIdx, d); return; }  // 换运 → 走原路径
-    for (let c = 0; c < 10; c++) {
-      let e1 = document.getElementById('liunian1_' + c);
-      let e2 = document.getElementById('liunian2_' + c);
-      let on = ((d.lnIdx || 0) === c);
-      markSel(e1, on); markSel(e2, on);
+    /* ① 小运段的流年来自"起运前那些年", **不在** d.bz.liuNian 里 —— 必须单独识别:
+          否则点它们毫无反应, 或(交运年与首步大运重叠时)被当成大运段的年份而跳段。 */
+    let by0 = (d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+    let qyY0 = (d.bzFull && d.bzFull.jiaoYun && d.bzFull.jiaoYun.year) || d.bz.qiYunYear || by0;
+    let cnt0 = Math.max(0, Math.min(10, qyY0 - by0 + 1));
+    if ((d.yunIdx || 0) === 0 && cnt0 > 0 && year >= by0 && year < by0 + cnt0) {
+      let k = year - by0;
+      for (let c = 0; c < cnt0; c++) {
+        markSel(document.getElementById('liunian1_' + c), c === k);
+        markSel(document.getElementById('liunian2_' + c), c === k);
+      }
+      d.lnIdx = k;
+      paintLiuyue(year, -1);        /* 流月随该年, 默认选它第一个显示的月 */
+      hideLiuri();
+      return;
     }
-    d.lnIdx = hit % 10;
-    /* 流月默认: 当前年月落在此流年则选对应月, 否则第一个月 */
+    /* ② 大运段: 按"年份落在哪一步大运"直接定位 —— bz.liuNian 的起运年不可用
+          (它自算错的年份起排), 故一律以 bzFull.dayun 的起始年为准。 */
+    let dyArr2 = (d.bzFull && d.bzFull.dayun) ? d.bzFull.dayun : [];
+    let seg = -1, segStart = 0;
+    for (let i = 1; i < dyArr2.length; i++) {
+      let sy = dyArr2[i].year || 0;
+      if (sy && year >= sy && year < sy + 10) { seg = i; segStart = sy; break; }
+    }
+    if (seg < 0) return;
+    let k2 = year - segStart;
+    if (seg !== d.yunIdx) {
+      window.mingliYun(seg, d);                 /* 换运(会重绘流年表) */
+    }
+    for (let c2 = 0; c2 < 10; c2++) {
+      markSel(document.getElementById('liunian1_' + c2), c2 === k2);
+      markSel(document.getElementById('liunian2_' + c2), c2 === k2);
+    }
+    d.lnIdx = k2;
+    /* 流月默认: 当年是今年则选对应月, 否则由 paintLiuyue 选该年第一个显示的月 */
     let now = new Date(), nowY = now.getFullYear(), nowM = now.getMonth() + 1;
-    let pick = 0;
+    let pick = -1;
     if (year === nowY) pick = (nowM >= 2) ? (nowM - 2) : (nowM + 10);
     paintLiuyue(year, pick);
-    d.lyIdx = pick;
     hideLiuri();
   };
 
@@ -419,8 +455,17 @@
   window.mingliPickMonth = function (idx) {
     let d = window._mlData;
     if (!d || !d.bz) return;
-    let ln = d.bz.liuNian || [];
-    let cur = ln[(d.yunIdx || 0) * 10 + (d.lnIdx || 0)];
+    /* 当前选中的流年: 由**该段的起始年 + 段内序号**推算 ——
+       不用 bz.liuNian(computeBaZiDaYun 的起运年算错, 会取到不相干的年份)。 */
+    let cur = null;
+    let dyAll = (d.bzFull && d.bzFull.dayun) ? d.bzFull.dayun : [];
+    if ((d.yunIdx || 0) === 0) {
+      let byM = (d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+      cur = { year: byM + (d.lnIdx || 0) };
+    } else {
+      let segM = dyAll[d.yunIdx || 0];
+      cur = (segM && segM.year) ? { year: segM.year + (d.lnIdx || 0) } : null;
+    }
     if (!cur) return;
     let rb0 = document.getElementById('liuriBox');
     /* 再次点击同一个流月 → 折叠流日(流月高亮保留, 它表示"正在看的月份") */
