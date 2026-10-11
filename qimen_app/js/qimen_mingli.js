@@ -196,13 +196,12 @@
       if (e1) e1.innerHTML = y.year + '<br>' + age + '岁';
       if (e2) {
         e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
-        /* 点流年 → 展开该年 12 流月（流月/流日不再施加神煞） */
+        /* 点流年 → 展开该年 12 流月（流月/流日不再施加神煞）。
+           这里只打 data 标记，点击交给文件末尾的**事件委托**处理 ——
+           与"点击神煞弹释义"同一机制，那套已在真机验证可用；
+           element.onclick 与内联 onclick 在本页 WebView 里都出现过不触发。 */
         e2.style.cursor = 'pointer';
-        e2.onclick = (function (yy) {
-          return function () {
-            if (window.mingliLiuyue) window.mingliLiuyue(yy);
-          };
-        })(y.year);
+        e2.setAttribute('data-ln-year', String(y.year | 0));
       }
       /* 流年神煞改到独立一行(liunian3_c), 不再挤在干支格里 */
       let e3 = document.getElementById('liunian3_' + c);
@@ -272,6 +271,24 @@
           '<div class="ly-sub">' + String(x.hour).padStart(2, '0') + '时</div></div>';
       });
   };
+
+  /* 事件委托：点带 data-ln-year 的流年格 → 展开该年流月。
+     用委托而非逐元素绑事件，既避开 WebView 对 element.onclick 的怪癖，
+     也让流年表重绘后无需重新绑定。 */
+  if (!window._mlLnDelegated) {
+    window._mlLnDelegated = 1;
+    document.addEventListener('click', function (e) {
+      let el = e.target;
+      while (el && el !== document.body) {
+        if (el.getAttribute && el.getAttribute('data-ln-year')) {
+          let yy = parseInt(el.getAttribute('data-ln-year'), 10);
+          if (yy && window.mingliLiuyue) window.mingliLiuyue(yy);
+          return;
+        }
+        el = el.parentNode;
+      }
+    }, true);
+  }
 
   /* ───────────────── 输入面板 ───────────────── */
 
