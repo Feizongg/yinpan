@@ -365,26 +365,31 @@
         if (nowD >= st) { cap = i + 1; break; }
       }
     }
+    /* 显示的月份**靠左排**: 有几个月就占最左边几格(如出生年只有 亥/子/丑 三个月,
+       就填第 1~3 格), 不按它在一年中的原始位置留空档。 */
+    let shown = [];
+    for (let k = start; k < cap && k < arr.length; k++) shown.push({ m: arr[k], idx: k });
     for (let i = 0; i < 12; i++) {
       let e1 = document.getElementById('liuyue1_' + i);
       let e2 = document.getElementById('liuyue2_' + i);
-      let m = arr[i];
-      if (!m || i < start || i >= cap) {
+      let it = shown[i];
+      if (!it) {
         if (e1) { e1.innerHTML = ''; markSel(e1, false); e1.removeAttribute('data-ly-idx'); }
         if (e2) { e2.innerHTML = ''; markSel(e2, false); e2.removeAttribute('data-ly-idx'); }
         continue;
       }
+      let m = it.m, ri = it.idx;          /* ri = 该月在一年中的真实序号(供点击回查) */
       if (e1) {
         e1.innerHTML = ganSpan(m.gan) + zhiSpan(m.zhi);
         e1.style.cursor = 'pointer';
-        e1.setAttribute('data-ly-idx', String(i));
-        markSel(e1, i === pick);
+        e1.setAttribute('data-ly-idx', String(ri));
+        markSel(e1, ri === pick);
       }
       if (e2) {
         e2.innerHTML = '<font class="shishen">' + m.jie + '</font><br>' + m.jieM + '/' + m.jieD;
         e2.style.cursor = 'pointer';
-        e2.setAttribute('data-ly-idx', String(i));
-        markSel(e2, i === pick);          /* 节气格与干支格同步高亮, 视觉一致 */
+        e2.setAttribute('data-ly-idx', String(ri));
+        markSel(e2, ri === pick);          /* 节气格与干支格同步高亮, 视觉一致 */
       }
     }
     return arr;
