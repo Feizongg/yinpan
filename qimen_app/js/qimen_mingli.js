@@ -574,13 +574,17 @@
         let qyAge = (bz.qiYunYear || 0) - (window.Y || bz.qiYunYear || 0);
         if (!(qyAge > 0)) qyAge = 1;
         for (let d = 0; d < n; d++) {
-          h += '<TD class="yun1" id="dayun_year' + d + '">' +
-               (d === 0 ? '小运' : (bz.qiYunYear + (d - 1) * 10)) + '</TD>';
+          /* 首格(小运段)与大运格一样可点 —— 小运/大运来回切换, 选中态同款 */
+          h += '<TD class="yun1" id="dayun_year' + d + '"' +
+               (d === 0 ? ' onclick="mingliYun(0,window._mlData)" style="cursor:pointer"' : '') + '>' +
+               (d === 0 ? '小<br>运' : (bz.qiYunYear + (d - 1) * 10)) + '</TD>';
         }
         h += '</TR><TR>';
         for (let d2 = 0; d2 < n; d2++) {
           if (d2 === 0) {
-            h += '<TD class="yun2" id="dayun0">1~' + qyAge + '岁</TD>';
+            /* 竖排(与大运标题同款); 点它切回小运段 */
+            h += '<TD class="yun2" id="dayun0" onclick="mingliYun(0,window._mlData)" style="cursor:pointer">' +
+                 '1~' + qyAge + '<br>岁</TD>';
             continue;
           }
           let dy = bz.dayun[d2], ss = (bz.dayunSS || [])[d2] || '';
