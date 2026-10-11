@@ -226,9 +226,16 @@
         }
         if (e3) e3.innerHTML = '';
       }
+      /* 自动选中流年: 当前年若落在小运段内则选它, 否则选**第一个**流年 */
+      let nowYY = new Date().getFullYear(), pickLn = 0;
+      for (let c3 = 0; c3 < cnt; c3++) { if (by + c3 === nowYY) { pickLn = c3; break; } }
+      for (let c4 = 0; c4 < cnt; c4++) {
+        markSel(document.getElementById('liunian1_' + c4), c4 === pickLn);
+        markSel(document.getElementById('liunian2_' + c4), c4 === pickLn);
+      }
       data.yunIdx = n;
-      data.lnIdx = 0;
-      paintLiuyue(by, 0);
+      data.lnIdx = pickLn;
+      paintLiuyue(by + pickLn, 0);      /* 流月随选中的流年走 */
       hideLiuri();
       return;
     }
