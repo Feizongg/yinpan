@@ -803,3 +803,13 @@ body.mode-mingli{ --pan-fs-sz:20px; --pan-lh-sz:24px }
 .ly-sub{font-size:10px;line-height:13px;color:var(--c-text-3)}
 /* 命理盘操作提示 */
 .ml-tip{font-size:13px;line-height:20px;color:var(--c-text-2);padding:3px 6px 5px;text-align:center}
+
+/* ══════ 命理盘·时间下钻: 干支字号在 大运/流年/流月/流日/流时 之间完全统一 ══════
+   大运 .yun2 = 13px/17px bold; 流年 .liunian2 = 13px/17px; 流日/流时 .ly-gz = 13px/17px bold。
+   流月此前未定义 → 继承了 .pan td 的 15px, 故补齐。 */
+#dayun_liunian .pan .liuyue1{font-size:13px;line-height:17px;font-weight:bold;text-align:center;
+  padding-top:4px;padding-bottom:2px;cursor:pointer}
+#dayun_liunian .pan .liuyue2{font-size:11px;line-height:15px;text-align:center;padding-bottom:3px;
+  color:var(--c-gold);cursor:pointer}
+/* 流年年份与大运年份同号(原先 10px vs 11px 不一致) */
+#dayun_liunian .pan .liunian1{font-size:11px}
