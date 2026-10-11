@@ -582,6 +582,13 @@
                (cur ? ' style="font-weight:bold"' : '') + '>' +
                ganSpan(dy.g) + '<br>' + zhiSpan(dy.z) + '<br><font class="shishen">' + ss + '</font></TD>';
         }
+        h += '</TR>';
+        /* 小运行: 并入大运表内(最左列为标签列, 与大运同格式), 列第 1~10 岁的小运干支 */
+        h += '<TR><TD class="yunTitle">小<br>运</TD>';
+        for (let x = 0; x < n; x++) {
+          let gz = xyList[x] || '';
+          h += '<TD class="xiaoyun">' + (gz ? ganSpan(gz[0]) + '<br>' + zhiSpan(gz[1]) : '') + '</TD>';
+        }
         h += '</TR></TABLE>';
 
         h += '<TABLE class="pan">';
@@ -594,12 +601,6 @@
         h += '</TR><TR>';
         for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
         h += '</TR>';
-        /* 小运行: 并入大运表最左侧(与大运同格式), 列出第 1~10 岁的小运干支 */
-        h += '<TR><TD class="yunTitle">小<br>运</TD>';
-        for (let x = 0; x < n; x++) {
-          let gz = xyList[x] || '';
-          h += '<TD class="xiaoyun">' + (gz ? ganSpan(gz[0]) + '<br>' + zhiSpan(gz[1]) : '') + '</TD>';
-        }
         h += '</TR></TABLE>';
 
         /* 流月表: 与流年同区、紧接其下(视觉上同一个表), 12 个月正月建寅,
