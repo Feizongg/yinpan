@@ -884,7 +884,7 @@ body.mode-mingli #mainDIV{ overflow: visible }
 }
 .sz-bar-cell{
   box-sizing: border-box;
-  display: flex;
+  display: flex; flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;                    /* 高度由 .sz-bar 的内联高度(与原行等高)决定 */
