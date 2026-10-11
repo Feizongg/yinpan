@@ -398,7 +398,11 @@ window.renderChuanRen=(data,containerId) => {
   h+='<TR><TD>'+d.zhiFu+'</TD><TD>'+d.zhiShi+'</TD><TD>'+d.xunShou+'</TD><TD>'+d.kongWang+'</TD><TD>'+d.maXing+'</TD>'+(isKe?'<TD></TD>':'')+'</TR>';
   h+='<TR id="tdTitle"><TD>月将</TD><TD>年命</TD><TD>用神</TD><TD colspan="'+(isKe?3:2)+'">贵人</TD></TR>';
   h+='<TR><TD>'+d.yueJiang.name+'</TD><TD>'+(d.opts.nianMing||'子')+'</TD><TD>'+(d.opts.yongShen||d.riGz||'')+'</TD><TD colspan="'+(isKe?3:2)+'">'+(d.opts.guiRen||'阳贵')+' ('+(d.opts.gender||'男')+') '+(d.guiRen.sun?'顺':'逆')+'</TD></TR>';
-    // 四柱标题+数据(顶部显示)
+    // 十神行置于四柱之上(与命理盘同序: 十神在上、四柱在下)
+    h+='<TR><TD>十神</TD>';
+    bzdy.bz.forEach((b, i) => {h+='<TD>'+(i===2?'日元':ssg[i])+'</TD>';});
+    h+='</TR>';
+    // 四柱标题+数据(紧接十神下方)
     h+='<TR id="tdTitle"><TD>'+(isKe?'五柱':'四柱')+'</TD><TD class="sizhuTitle">年柱</TD><TD class="sizhuTitle">月柱</TD><TD class="sizhuTitle">日柱</TD><TD class="sizhuTitle">时柱</TD>'+(isKe?'<TD class="sizhuTitle">刻柱</TD>':'')+'</TR>';
     h+='<TR><TD></TD>';
     h+='<TD class="sizhu sizhu-v" id="nianzhu">'+wxSpan(nianGz[0]||'')+'<br>'+wxSpan(nianGz[1]||'')+'</TD>';
@@ -407,10 +411,7 @@ window.renderChuanRen=(data,containerId) => {
     h+='<TD class="sizhu sizhu-v" id="shizhu">'+wxSpan(shiGz[0]||'')+'<br>'+wxSpan(shiGz[1]||'')+'</TD>';
     if(isKe)h+='<TD class="sizhu sizhu-v" id="kezhu">'+wxSpan(keGan)+'<br>'+wxSpan(keZhi)+'</TD>';
     h+='</TR>';
-    // 八字信息(十神/藏干/纳音/地势/自坐/空亡): 紧接四柱下方, 与四柱同表对齐
-    h+='<TR><TD>十神</TD>';
-    bzdy.bz.forEach((b, i) => {h+='<TD>'+(i===2?'日元':ssg[i])+'</TD>';});
-    h+='</TR>';
+    // 八字信息(藏干/纳音/地势/自坐/空亡): 紧接四柱下方, 与四柱同表对齐
     // 干支已在盘头「四柱」处显示, 此处不再重复(表头保留供十神/藏干等行对齐)
     h+='<TR><TD>藏干</TD>';
     bzdy.bz.forEach((b, i) => {

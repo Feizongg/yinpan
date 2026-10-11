@@ -478,7 +478,9 @@
                       '<span class="cx-po">门迫</span>、<span class="cx-xingmu">刑+墓</span>';
         /* 四柱行: 标签按性别作 乾造/坤造(与其它标签同为金色), 交 baziMainRows 插到十神行之下 */
         let zaoLabel = (data.gender === '女') ? '坤造' : '乾造';
-        let sizhuRow = '<TR id="sizhu" class="hd-row"><TD class="hd-side">' + zaoLabel + '</TD>';
+        /* 标签样式与「出生」「节气」等左侧标签完全相同(内联金色, 不用 .hd-side
+           —— 那个类另有 12px 字号与 2px 字距, 会比其它标签小而散)。 */
+        let sizhuRow = '<TR id="sizhu" class="hd-row"><TD style="color:var(--c-gold)">' + zaoLabel + '</TD>';
         [sz.nian, sz.yue, sz.ri, sz.shi].forEach(function (gz) {
           gz = gz || '';
           /* 用 .sizhu(时盘同款): 复用 #panHead .sizhu 的整套响应式尺寸 */
