@@ -227,13 +227,8 @@
     if (selY && selY.year === nowY) lyPick = (nowM2 >= 2) ? (nowM2 - 2) : (nowM2 + 10);
     data.lyIdx = lyPick;
     paintLiuyue(selY ? selY.year : (bz.qiYunYear || nowY), lyPick);
+    /* 流日**一律默认不显示** —— 只有用户点流月时才打开(届时默认选中当下日期)。 */
     hideLiuri();
-    /* 若选中的流年正是今年, 则直接展开当前月的流日并选中当前日; 否则(含起运晚于当前)不显示 */
-    if (selY && selY.year === nowY) {
-      let arrM = window.baziLiuYue ? window.baziLiuYue(selY.year) : [];
-      let mm = arrM[lyPick];
-      if (mm) window.mingliLiuri(mm.solarY, mm.solarM, mm.gz, selY.year);
-    }
     void startYear;
   };
 
@@ -528,6 +523,8 @@
 
       /* 交运说明: 置于九宫下方 —— 即原来颜色说明所在的位置 */
       if (bzInfo && window.baziJiaoYunBlock) h += window.baziJiaoYunBlock(bzInfo);
+      /* 操作提示: 流日默认不显示, 点流月才打开 */
+      h += '<div class="ml-tip">点击对应流月可打开流日功能</div>';
 
       /* ── ③ #dayun_liunian 大运 + 流年(两个独立 TABLE) ── */
       if (bz && bz.dayun && bz.dayun.length) {
