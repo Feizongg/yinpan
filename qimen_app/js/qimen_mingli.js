@@ -228,6 +228,12 @@
     data.lyIdx = lyPick;
     paintLiuyue(selY ? selY.year : (bz.qiYunYear || nowY), lyPick);
     hideLiuri();
+    /* 若选中的流年正是今年, 则直接展开当前月的流日并选中当前日; 否则(含起运晚于当前)不显示 */
+    if (selY && selY.year === nowY) {
+      let arrM = window.baziLiuYue ? window.baziLiuYue(selY.year) : [];
+      let mm = arrM[lyPick];
+      if (mm) window.mingliLiuri(mm.solarY, mm.solarM, mm.gz, selY.year);
+    }
     void startYear;
   };
 
@@ -237,7 +243,7 @@
 
   function lyGrid(arr, cols, cellFn) {
     let h = '<div class="ly-grid' + (cols === 7 ? ' ly-grid7' : '') + '">';
-    arr.forEach(function (x) { h += cellFn(x); });
+    arr.forEach(function (x, i) { h += cellFn(x, i); });
     return h + '</div>';
   }
 
@@ -317,6 +323,8 @@
     let arr = window.baziLiuYue ? window.baziLiuYue(cur.year) : [];
     d.lyIdx = idx;
     for (let i = 0; i < 12; i++) markSel(document.getElementById('liuyue1_' + i), i === idx);
+    /* 大运/流年若已超过当前 → 不显示流日(未来的日子尚不可断) */
+    if (cur.year > new Date().getFullYear()) { hideLiuri(); return; }
     let m = arr[idx];
     if (!m) return;
     window.mingliLiuri(m.solarY, m.solarM, m.gz, cur.year);
@@ -334,12 +342,38 @@
     if (shi) { shi.innerHTML = ''; shi.style.display = 'none'; }
     box.style.display = arr.length ? 'block' : 'none';
     if (!arr.length) { box.innerHTML = ''; return; }
+    /* 默认选中: 该月正是当前月 → 选当前日; 否则选第 1 日 */
+    let now = new Date(), pick = 0;
+    if (y === now.getFullYear() && m === now.getMonth() + 1) {
+      for (let i = 0; i < arr.length; i++) { if (arr[i].d === now.getDate()) { pick = i; break; } }
+    }
     box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + arr.length + ' 天）</div>' +
-      lyGrid(arr, 7, function (d) {
-        return '<div class="ly-cell" onclick="mingliLiushi(' + d.y + ',' + d.m + ',' + d.d + ')">' +
+      lyGrid(arr, 7, function (d, i) {
+        return '<div class="ly-cell" data-lr-idx="' + i + '"' +
+          ' data-lr-y="' + d.y + '" data-lr-m="' + d.m + '" data-lr-d="' + d.d + '">' +
           '<div class="ly-gz">' + ganSpan(d.gan) + zhiSpan(d.zhi) + '</div>' +
           '<div class="ly-sub">' + d.m + '/' + d.d + '</div></div>';
       });
+    window.mingliPickDay(pick, true);      // 默认高亮, 但不展开时辰
+  };
+
+  /** 点流日 → 高亮该日(silent=true 时不展开流时) */
+  window.mingliPickDay = function (idx, silent) {
+    let box = document.getElementById('liuriBox');
+    if (!box) return;
+    let cells = box.querySelectorAll('[data-lr-idx]');
+    let hit = null;
+    for (let i = 0; i < cells.length; i++) {
+      let on = (parseInt(cells[i].getAttribute('data-lr-idx'), 10) === idx);
+      markSel(cells[i], on);
+      if (on) hit = cells[i];
+    }
+    window._mlDayIdx = idx;
+    if (silent || !hit) return;
+    let y = +hit.getAttribute('data-lr-y'), m = +hit.getAttribute('data-lr-m'), dd = +hit.getAttribute('data-lr-d');
+    let sb = document.getElementById('liushiBox');
+    if (sb) sb.style.display = 'block';
+    window.mingliLiushi(y, m, dd);
   };
 
   /** 点流日 → 该日 12 时辰 */
@@ -363,6 +397,11 @@
     document.addEventListener('click', function (e) {
       let el = e.target;
       while (el && el !== document.body) {
+        let lr = el.getAttribute && el.getAttribute('data-lr-idx');
+        if (lr !== null && lr !== undefined && lr !== '') {
+          if (window.mingliPickDay) window.mingliPickDay(parseInt(lr, 10));
+          return;
+        }
         let ly = el.getAttribute && el.getAttribute('data-ly-idx');
         if (ly !== null && ly !== undefined && ly !== '') {
           if (window.mingliPickMonth) window.mingliPickMonth(parseInt(ly, 10));
