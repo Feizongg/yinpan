@@ -9,6 +9,7 @@
     "build:bundle": "bash scripts/build.sh bundle",
     "build:linux": "bash scripts/build.sh linux",
     "build:appimage": "bash scripts/build.sh appimage",
+    "build:windows": "bash scripts/build.sh windows",
     "build:android": "bash scripts/build-android.sh",
     "adb:wifi": "bash scripts/device.sh wifi",
     "adb:install": "bash scripts/device.sh install",

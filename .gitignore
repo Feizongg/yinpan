@@ -31,8 +31,8 @@ _textbook_draft/
 # 玄女十六字诀源记录与整理稿（不入库）
 _xn_raw/
 
-# ǩ������(�� keystore ͬΪ���в���, �����)
+# 签名材料（与 keystore 同属本地材料，不入库）
 qimen-signing.properties
 
-# ���� web ����������(�����ֿ�, �������)
+# 内网 web 部署口令文件（不入库，勿提交）
 .qimen-web-pass
