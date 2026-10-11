@@ -11,10 +11,10 @@
   'use strict';
 
   var CATS = {
-    '神煞': { table: 'SHENSHA_TIPS', title: '神煞', showJX: true },
-    '十神': { table: 'SHISHEN_TIPS', title: '十神', showJX: false },
-    '长生': { table: 'ZHANGSHENG_TIPS', title: '十二长生', showJX: false },
-    '纳音': { table: 'NAYIN_TIPS', title: '纳音', showJX: false }
+    '神煞': { table: 'SHENSHA_TIPS', title: '神煞', showJX: true, file: 'qimen_shensha_tips.js' },
+    '十神': { table: 'SHISHEN_TIPS', title: '十神', showJX: false, file: 'qimen_term_tips.js' },
+    '长生': { table: 'ZHANGSHENG_TIPS', title: '十二长生', showJX: false, file: 'qimen_term_tips.js' },
+    '纳音': { table: 'NAYIN_TIPS', title: '纳音', showJX: false, file: 'qimen_term_tips.js' }
   };
 
   function esc(s) {
@@ -70,7 +70,7 @@
     if (!item) {
       h += '<div style="font-size:13px;color:var(--c-text-3,#999);text-align:center;padding:12px 0">' +
         '暂无「' + esc(name) + '」的释义。<br><span style="font-size:12px">' +
-        '（可在 qimen_shensha_tips.js 中补充该条目）</span></div>';
+        '（可在 ' + esc(cfg.file || 'qimen_shensha_tips.js') + ' 中补充该条目）</span></div>';
     } else {
       function block(label, txt) {
         if (!txt) return '';
