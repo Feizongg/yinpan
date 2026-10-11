@@ -146,6 +146,14 @@
       catch (e) { return { yun: [], ln: [] }; }
     }
     function gzOfYun(k) { let o = bz.dayun[k] || {}; return o.gz || ((o.g || '') + (o.z || '')); }
+    /* 流年格窄(屏宽/10列 ≈ 40px)，4 字全名(天乙贵人 ≈ 44px)物理上放不下必然拆行 ——
+       故显示走简称、释义键仍传全名（用 termSpan 的 label 参数）。
+       规则: 去掉 贵人/煞/日 后缀; 个别无后缀的四字名单独映射。 */
+    let SHA_SHORT_MAP = { '天罗地网': '罗网' };
+    function shaShort(nm) {
+      if (SHA_SHORT_MAP[nm]) return SHA_SHORT_MAP[nm];
+      return nm.replace(/(贵人|煞|日)$/, '') || nm;
+    }
 
     // 大运格高亮 + 悬停显示该运神煞
     for (let i = 0; i < 10; i++) {
@@ -191,7 +199,7 @@
       let e3 = document.getElementById('liunian3_' + c);
       if (e3) {
         e3.innerHTML = shaCalc(curYunGz, (y.g || '') + (y.z || '')).ln.map(function (s2) {
-          return window.termSpan ? window.termSpan('神煞', s2) : s2;
+          return window.termSpan ? window.termSpan('神煞', s2, '', shaShort(s2)) : shaShort(s2);
         }).join('<br>');
       }
     }
