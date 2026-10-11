@@ -317,6 +317,12 @@
     let ln = d.bz.liuNian || [];
     let cur = ln[(d.yunIdx || 0) * 10 + (d.lnIdx || 0)];
     if (!cur) return;
+    let rb0 = document.getElementById('liuriBox');
+    /* 再次点击同一个流月 → 折叠流日(流月高亮保留, 它表示"正在看的月份") */
+    if (d.lyIdx === idx && rb0 && rb0.style.display !== 'none' && rb0.innerHTML) {
+      hideLiuri();
+      return;
+    }
     let arr = window.baziLiuYue ? window.baziLiuYue(cur.year) : [];
     d.lyIdx = idx;
     for (let i = 0; i < 12; i++) {
@@ -360,6 +366,15 @@
   window.mingliPickDay = function (idx, silent) {
     let box = document.getElementById('liuriBox');
     if (!box) return;
+    /* 再次点击同一天 → 折叠流时(只收流时, 流日与当日高亮都保留) */
+    if (!silent && window._mlDayIdx === idx) {
+      let sb0 = document.getElementById('liushiBox');
+      if (sb0 && sb0.style.display !== 'none' && sb0.innerHTML) {
+        sb0.innerHTML = '';
+        sb0.style.display = 'none';
+        return;
+      }
+    }
     let cells = box.querySelectorAll('[data-lr-idx]');
     let hit = null;
     for (let i = 0; i < cells.length; i++) {
