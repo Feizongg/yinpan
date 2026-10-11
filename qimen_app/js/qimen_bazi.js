@@ -533,7 +533,7 @@
   function hourText(h) { return ZHI[Math.floor(((h + 1) % 24) / 2)]; }
 
   /* 十神/藏干/纳音/地势/自坐/空亡/神煞/胎元命宫身宫/旺相/交运 —— 命理主盘与本模块共用 */
-  function baziMainRows(bz, withGz, rowCls, tipHtml, skipJy) {
+  function baziMainRows(bz, withGz, rowCls, tipHtml, skipJy, sizhuRowHtml) {
     let h = '';
     let rc = rowCls ? ' class="' + rowCls + '"' : '';
     /* 十神 */
@@ -545,6 +545,9 @@
       h += '<TD class="shiShen">' + t + '</TD>';
     });
     h += '</TR>';
+    /* 命理盘的四柱行插在「十神」之下(四柱在十神之下、藏干之上), HTML 由调用方给,
+       这样各盘可各自决定标签与样式(命理盘用 乾造/坤造 + .sizhu 响应式字号)。 */
+    if (sizhuRowHtml) h += sizhuRowHtml;
     /* 干支(命理主盘已自带四柱, 那边传 withGz=false 跳过) */
     if (withGz) {
       h += '<TR><TD style="color:var(--c-gold)">' + bz.zao + '</TD>';

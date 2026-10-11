@@ -465,14 +465,6 @@
            '<TD><span class="hd-lbl">值使</span><font id="zhiShi">' + qr.zs.s + '</font>门</TD>' +
            '<TD id="maXing"><span class="hd-lbl">马星</span>' + wx(qr.ma.z) + '</TD>' +
            '<TD><span class="hd-lbl">空亡</span>' + wx(qr.kw.gz) + '</TD></TR>';
-      /* 四柱: 只显示干支本身, 字号加大加粗(不标注年柱/月柱/日柱/时柱) */
-      h += '<TR id="sizhu" class="hd-row"><TD class="hd-side">四柱</TD>';
-      [sz.nian, sz.yue, sz.ri, sz.shi].forEach(function (gz) {
-        gz = gz || '';
-        /* 用 .sizhu(时盘同款): 复用 #panHead .sizhu 的整套响应式尺寸 */
-        h += '<TD class="sizhu sizhu-v">' + ganSpan(gz[0] || '') + '<br>' + zhiSpan(gz[1] || '') + '</TD>';
-      });
-      h += '</TR>';
       /* ── 八字信息(原「八字排盘」主盘, 合并进命理主盘): 十神/藏干/纳音/地势/
             自坐/空亡/神煞/胎元·命宫·身宫/旺相休囚死/交运; 四柱行主盘已有, 不重复 ── */
       let bzInfo = null;   /* 声明提块外: 270 行交运说明在 try 外使用, 原 var 提升语义 */
@@ -484,7 +476,16 @@
         }) : null;
         let tipHtml = '颜色说明：<span class="cx-mu">入墓</span>、<span class="cx-xing">击刑</span>、' +
                       '<span class="cx-po">门迫</span>、<span class="cx-xingmu">刑+墓</span>';
-        if (bzInfo && window.baziMainRows) h += window.baziMainRows(bzInfo, false, 'bz-sec', tipHtml, true);
+        /* 四柱行: 标签按性别作 乾造/坤造(与其它标签同为金色), 交 baziMainRows 插到十神行之下 */
+        let zaoLabel = (data.gender === '女') ? '坤造' : '乾造';
+        let sizhuRow = '<TR id="sizhu" class="hd-row"><TD class="hd-side">' + zaoLabel + '</TD>';
+        [sz.nian, sz.yue, sz.ri, sz.shi].forEach(function (gz) {
+          gz = gz || '';
+          /* 用 .sizhu(时盘同款): 复用 #panHead .sizhu 的整套响应式尺寸 */
+          sizhuRow += '<TD class="sizhu sizhu-v">' + ganSpan(gz[0] || '') + '<br>' + zhiSpan(gz[1] || '') + '</TD>';
+        });
+        sizhuRow += '</TR>';
+        if (bzInfo && window.baziMainRows) h += window.baziMainRows(bzInfo, false, 'bz-sec', tipHtml, true, sizhuRow);
       } catch (e) {
         if (window._logErr) window._logErr('mingli.baziRows', e && e.message);
       }
