@@ -234,12 +234,20 @@ if [ -f "$appGradle" ]; then
   Ok 'app/build.gradle → R8 + shrinkResources + optimize 规则'
 fi
 
-# 5e) ProGuard: 保留 Capacitor 与 JS 桥接方法
+# 5e) ProGuard: 保留 Capacitor / JS 桥接方法 / 自定义插件
+# ⚠️ 守卫必须查**本补丁特有的**特征: Capacitor 模板**自带** `-keep class com.getcapacitor.**`,
+#    用它作判据恒为真 → 整段永不执行, NativeSharePlugin 的 keep 规则从未写入。后果: R8 裁掉
+#    反射加载的插件, Android 导出(ACTION_SEND 分享)静默失效 —— 正是 release 包最难发现的回归。
+#    改为三条规则**各自**检测(2026-10-04 修; 此前 AGENTS 把它列为"四项配套缺一不可"之一却一直没落地)。
 pg='android/app/proguard-rules.pro'
-if [ -f "$pg" ] && ! grep -q 'com\.getcapacitor' "$pg"; then
-  printf '\n-keep class com.getcapacitor.** { *; }
-          -keep class com.qimen.yinpan.NativeSharePlugin { *; }\n-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }\n' >> "$pg"
-  Ok 'proguard-rules.pro → 保留 Capacitor / JavascriptInterface'
+if [ -f "$pg" ]; then
+  grep -q 'com\.getcapacitor' "$pg" || \
+    printf '%s\n' '-keep class com.getcapacitor.** { *; }' >> "$pg"
+  grep -q 'NativeSharePlugin' "$pg" || \
+    printf '%s\n' '-keep class com.qimen.yinpan.NativeSharePlugin { *; }' >> "$pg"
+  grep -q 'JavascriptInterface' "$pg" || \
+    printf '%s\n' '-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }' >> "$pg"
+  Ok 'proguard-rules.pro → 保留 Capacitor / NativeSharePlugin / JavascriptInterface'
 fi
 
 # 5f) 清单: 硬件加速 + 移除 SMS 相关权限(WebView 依赖可能注入)
@@ -255,6 +263,15 @@ if [ -f "$manifest" ]; then
     Ok 'Manifest -> FileProvider + res/xml/file_paths.xml'
   else
     Ok 'FileProvider 已配置'
+    # ⚠️ manifest 里有 fileprovider ≠ file_paths.xml 内容正确: 模板态是 external-path(my_images)
+    #    + cache-path(my_cache_images, path=".") —— 授权面覆盖整个 cacheDir, 而 CI 口径只授权
+    #    cacheDir/share(NativeShare 的落盘目录)。原守卫只看 manifest, 部分应用状态下永不纠正,
+    #    故单独校验 file_paths.xml 内容(2026-10-04 修)。
+    fp='android/app/src/main/res/xml/file_paths.xml'
+    if [ -f "$fp" ] && ! grep -q 'path="share/"' "$fp"; then
+      printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' '<paths>' '    <cache-path name="share" path="share/" />' '</paths>' > "$fp"
+      Ok 'file_paths.xml → 收紧为仅授权 cacheDir/share(与 CI 一致)'
+    fi
   fi
   grep -q 'xmlns:tools' "$manifest" || \
     sed -i 's|<manifest |<manifest xmlns:tools="http://schemas.android.com/tools" |' "$manifest"
