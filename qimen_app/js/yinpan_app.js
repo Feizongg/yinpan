@@ -15781,7 +15781,7 @@ function _importJSON() {
    切换时收起八字盘、以及 clearWaipan 前置。此前这里被时盘的 showYixing/showState/
    tianmenDihu 顶掉, 于是 qimen_mingli.js 的 mingliBtn 永不执行、ringKind 恒为 'none'。 */
 function _mingliYixingBtn() {
-  if (window.showMingliYixing) window.showMingliYixing();
+  if (window.showYixing) window.showYixing();
   if (window.mingliBtn) window.mingliBtn(1, window._mlData);
 }
 function _mingliStateBtn() {
@@ -15796,7 +15796,7 @@ function _mingliTianmenBtn() {
 function _bindActionButtons() {
   // 底部操作按钮 —— 按盘型分派: 命理盘走 mingliBtn 路径, 其余盘型走各自的全局函数。
   /* ⚠️ 这里是**唯一**一处程序化绑定点(覆盖 qimen_boot.js 的 rebind 所接管的版本):
-     命理盘按钮的内联属性写的是 showMingliYixing();mingliBtn(1,window._mlData),
+     命理盘按钮的内联属性写的是 showYixing();mingliBtn(1,window._mlData),
      rebind 解析后挂上的也是这条路 —— 若此处再按时盘的 showYixing 覆盖,
      命理盘的按钮逻辑(ringKind 记账等)就整块变死代码。 */
   let btns = {

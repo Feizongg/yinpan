@@ -716,7 +716,7 @@
          #btn1/#btn2/#btn3 同名同 id, 只靠 panType 判断会在"排过命理盘再切回时盘"
          时把命理盘的处理器错挂到时盘按钮上(实测踩过)。 */
       h += '<TABLE id="btnTable1" class="ml-btns"><TR>';
-      h += '<TD><div class="btn" id="btn1" onclick="showMingliYixing();mingliBtn(1,window._mlData);">移星换斗</div></TD>';
+      h += '<TD><div class="btn" id="btn1" onclick="showYixing();mingliBtn(1,window._mlData);">移星换斗</div></TD>';
       h += '<TD><div class="btn" id="btn3" onclick="mingliBtn(3,window._mlData);">天门地户</div></TD>';
       h += '<TD><div class="btn" id="btn2" onclick="mingliState();mingliBtn(2,window._mlData);">长生状态</div></TD>';
       h += '</TR></TABLE>';
@@ -859,17 +859,11 @@
     if (y1) { y1.style.verticalAlign = 'top'; y1.style.fontSize = 'var(--pan-fs-sm)'; y1.style.color = 'var(--c-text)'; }
   };
 
-  /** 移星换斗(占位: 按钮结构已就位, 功能待补) */
+  /** 移星换斗: 命理盘与时盘**共用同一套逻辑**
+      —— 两者的九宫都由 yinpan_app.js 的 buildPaipanGrid 生成(同构),
+         故直接用窗口的 showYixing, 不再另做占位实现。
+      保留本函数名作为别名, 以防外部按旧名调用。 */
   window.showMingliYixing = function () {
-    let d = document.getElementById('yixinghuandouDIV');
-    if (!d) return;
-    if (d.getAttribute('data-mode') === 'bazi') {   // 八字盘占着容器时先让位
-      d.innerHTML = ''; d.removeAttribute('data-mode'); d.style.display = 'none';
-    }
-    d.style.display = (d.style.display === 'block') ? 'none' : 'block';
-    if (d.style.display === 'block' && !d.innerHTML) {
-      d.innerHTML = '<div style="text-align:center;color:var(--c-text-3);font-size:12px;padding:8px">' +
-                    '移星换斗：点击盘面宫位查看各宫换斗星（待补全）</div>';
-    }
+    if (window.showYixing) window.showYixing();
   };
 })();
