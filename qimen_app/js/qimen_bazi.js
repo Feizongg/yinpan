@@ -104,7 +104,8 @@
     let GAN = '甲乙丙丁戊己庚辛壬癸', ZHI = '子丑寅卯辰巳午未申酉戌亥';
     let yang = '甲丙戊庚壬'.indexOf(pillars[0].gan) >= 0;
     let fwd = (yang === (gender === '男'));
-    let g0 = GAN.indexOf(pillars[1].gan), z0 = ZHI.indexOf(pillars[1].zhi);
+    /* 自**时柱**起(不是月柱) —— 依第三方数据实测: 该盘时柱甲子, 其 xiaoyun 首项即乙丑 */
+    let g0 = GAN.indexOf(pillars[3].gan), z0 = ZHI.indexOf(pillars[3].zhi);
     let out = [];
     for (let i = 1; i <= (cnt || 10); i++) {
       let k = fwd ? i : -i;
