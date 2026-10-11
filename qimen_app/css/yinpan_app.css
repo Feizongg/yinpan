@@ -793,3 +793,11 @@ body.mode-mingli{ --pan-fs-sz:20px; --pan-lh-sz:24px }
 }
 /* 山向的"年 / 度数"选择器也居中(它同样带 .form-row, 但只在 #timeRow 之外, 故单独指定) */
 #shanxiangInputs{ justify-content:center }
+/* ══════ 流月 / 流日 / 流时 下钻（命理盘） ══════ */
+.ly-title{color:var(--c-gold);font-size:12px;padding:7px 4px 3px;text-align:left;letter-spacing:1px}
+.ly-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--c-border);border:1px solid var(--c-border)}
+.ly-grid7{grid-template-columns:repeat(7,1fr)}
+.ly-cell{background:var(--c-bg);text-align:center;padding:3px 0;cursor:pointer}
+.ly-cell:hover{background:var(--c-gray-bg)}
+.ly-gz{font-size:13px;line-height:17px;font-weight:bold}
+.ly-sub{font-size:10px;line-height:13px;color:var(--c-text-3)}

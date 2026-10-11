@@ -281,6 +281,87 @@
     return { yun: all[4] || [], ln: all[5] || [] };
   };
 
+  /* ── 流月 / 流日 / 流时 ────────────────────────────────────────────
+     口径对齐第三方验证（均在其前端本地计算）：
+       · 流月：一年 12 个月，正月建寅（对应公历 2 月）；月干按五虎遁 ——
+         即 tyme 直接给出的月柱，无需自算。
+       · 流日：本"节"到下一"节"之间的日子，且**只保留月柱与该流月干支一致者**
+         （节气在月中的那几天仍属上一月，第三方即以此过滤）。
+       · 流时：五鼠遁 —— 即 tyme 直接给出的时柱。
+     按需求：流月/流日**不施加神煞**。 */
+  function jieOfMonth(t, year, month) {
+    /* 公历 month 月所属的"节"：2月=立春(SolarTerm 索引 3)，每进一月 +2；
+       索引 25 折回 1(小寒) 且仍在同一年 —— 实测 fromIndex(y,1)=小寒 y-01-05。 */
+    let idx = 3 + 2 * ((month - 2 + 12) % 12);
+    if (idx > 23) idx -= 24;
+    let term = t.SolarTerm.fromIndex(year, idx);
+    let st = term.getJulianDay().getSolarTime();
+    return { y: st.getYear(), m: st.getMonth(), d: st.getDay(), name: term.getName() };
+  }
+
+  /** 流月：returns [{gan,zhi,gz,jie,jieY,jieM,jieD,solarY,solarM}] 自正月(寅)起 */
+  window.baziLiuYue = function (year) {
+    let t = window.tyme;
+    if (!t) return [];
+    let out = [];
+    for (let i = 0; i < 12; i++) {
+      let mm = i + 2, yy = year;
+      if (mm > 12) { mm -= 12; yy = year + 1; }        // 丑月落在次年 1 月
+      let jie = jieOfMonth(t, year, mm);
+      let st = t.SolarTime.fromYmdHms(yy, mm, 15, 12, 0, 0);   // 月中取月柱，避开交节当日
+      let mGz = st.getLunarHour().getEightChar().getMonth();
+      out.push({
+        gan: mGz.getHeavenStem().getName(), zhi: mGz.getEarthBranch().getName(), gz: mGz.getName(),
+        jie: jie.name, jieY: jie.y, jieM: jie.m, jieD: jie.d,
+        solarY: yy, solarM: mm
+      });
+    }
+    return out;
+  };
+
+  /** 流日：某节气月内的日子（月柱须与 monthGz 相同）。month 为公历月，monthGz 为该流月干支 */
+  window.baziLiuRi = function (year, month, monthGz) {
+    let t = window.tyme;
+    if (!t) return [];
+    let a = jieOfMonth(t, year, month);
+    let ny = month === 12 ? year + 1 : year, nm = month === 12 ? 1 : month + 1;
+    let b = jieOfMonth(t, ny, nm);
+    let cur = new Date(a.y, a.m - 1, a.d);
+    let end = new Date(b.y, b.m - 1, b.d);
+    let out = [];
+    while (cur < end) {
+      let yy = cur.getFullYear(), mm = cur.getMonth() + 1, dd = cur.getDate();
+      let st = t.SolarTime.fromYmdHms(yy, mm, dd, 12, 0, 0);
+      let ec = st.getLunarHour().getEightChar();
+      if (!monthGz || ec.getMonth().getName() === monthGz) {
+        let dGz = ec.getDay();
+        out.push({
+          gan: dGz.getHeavenStem().getName(), zhi: dGz.getEarthBranch().getName(), gz: dGz.getName(),
+          y: yy, m: mm, d: dd
+        });
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  };
+
+  /** 流时：该日 12 时辰（子时以 0 时为代表） */
+  window.baziLiuShi = function (year, month, day) {
+    let t = window.tyme;
+    if (!t) return [];
+    let out = [];
+    for (let i = 0; i < 12; i++) {
+      let hh = (i * 2) % 24;
+      let st = t.SolarTime.fromYmdHms(year, month, day, hh, 0, 0);
+      let hGz = st.getLunarHour().getEightChar().getHour();
+      out.push({
+        gan: hGz.getHeavenStem().getName(), zhi: hGz.getEarthBranch().getName(), gz: hGz.getName(),
+        hour: hh
+      });
+    }
+    return out;
+  };
+
   /* 十神简称 → 全名：盘面显示用简称（印/劫/杀），点释义要用全名做键 */
   function tenFull(short) {
     if (!short) return short;

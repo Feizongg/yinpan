@@ -194,7 +194,16 @@
       }
       let age = birthYear ? (y.year - birthYear + 1) : '';
       if (e1) e1.innerHTML = y.year + '<br>' + age + '岁';
-      if (e2) e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
+      if (e2) {
+        e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
+        /* 点流年 → 展开该年 12 流月（流月/流日不再施加神煞） */
+        e2.style.cursor = 'pointer';
+        e2.onclick = (function (yy) {
+          return function () {
+            if (window.mingliLiuyue) window.mingliLiuyue(yy);
+          };
+        })(y.year);
+      }
       /* 流年神煞改到独立一行(liunian3_c), 不再挤在干支格里 */
       let e3 = document.getElementById('liunian3_' + c);
       if (e3) {
@@ -205,6 +214,63 @@
     }
     data.yunIdx = n;
     void startYear;
+  };
+
+  /* ─────────────── 流月 / 流日 / 流时（三级下钻）───────────────
+     口径见 qimen_bazi.js 的 baziLiuYue/Ri/Shi。
+     按需求：流月与流日**不施加神煞**（仅列干支与节气/日期）。 */
+
+  function lyGrid(arr, cols, cellFn) {
+    let h = '<div class="ly-grid' + (cols === 7 ? ' ly-grid7' : '') + '">';
+    arr.forEach(function (x) { h += cellFn(x); });
+    return h + '</div>';
+  }
+
+  /** 点流年 → 该年 12 个流月 */
+  window.mingliLiuyue = function (year) {
+    let box = document.getElementById('liuyueBox');
+    if (!box) return;
+    let arr = window.baziLiuYue ? window.baziLiuYue(year) : [];
+    let ri = document.getElementById('liuriBox'), shi = document.getElementById('liushiBox');
+    if (ri) ri.innerHTML = '';
+    if (shi) shi.innerHTML = '';
+    if (!arr.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="ly-title">流月 · ' + year + ' 年（正月起寅）</div>' +
+      lyGrid(arr, 6, function (m) {
+        return '<div class="ly-cell" onclick="mingliLiuri(' + m.solarY + ',' + m.solarM + ',\'' + m.gz + '\')">' +
+          '<div class="ly-gz">' + ganSpan(m.gan) + zhiSpan(m.zhi) + '</div>' +
+          '<div class="ly-sub">' + m.jie + '</div>' +
+          '<div class="ly-sub">' + m.jieM + '/' + m.jieD + '</div></div>';
+      });
+  };
+
+  /** 点流月 → 该节气月内的流日 */
+  window.mingliLiuri = function (y, m, gz) {
+    let box = document.getElementById('liuriBox');
+    if (!box) return;
+    let arr = window.baziLiuRi ? window.baziLiuRi(y, m, gz) : [];
+    let shi = document.getElementById('liushiBox');
+    if (shi) shi.innerHTML = '';
+    if (!arr.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="ly-title">流日 · ' + gz + ' 月（共 ' + arr.length + ' 天）</div>' +
+      lyGrid(arr, 7, function (d) {
+        return '<div class="ly-cell" onclick="mingliLiushi(' + d.y + ',' + d.m + ',' + d.d + ')">' +
+          '<div class="ly-gz">' + ganSpan(d.gan) + zhiSpan(d.zhi) + '</div>' +
+          '<div class="ly-sub">' + d.m + '/' + d.d + '</div></div>';
+      });
+  };
+
+  /** 点流日 → 该日 12 时辰 */
+  window.mingliLiushi = function (y, m, d) {
+    let box = document.getElementById('liushiBox');
+    if (!box) return;
+    let arr = window.baziLiuShi ? window.baziLiuShi(y, m, d) : [];
+    if (!arr.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="ly-title">流时 · ' + y + '-' + m + '-' + d + '</div>' +
+      lyGrid(arr, 6, function (x) {
+        return '<div class="ly-cell"><div class="ly-gz">' + ganSpan(x.gan) + zhiSpan(x.zhi) + '</div>' +
+          '<div class="ly-sub">' + String(x.hour).padStart(2, '0') + '时</div></div>';
+      });
   };
 
   /* ───────────────── 输入面板 ───────────────── */
@@ -340,7 +406,9 @@
            此前塞在干支格(liunian2)里, 空间不足会与相邻内容重叠。 */
         h += '</TR><TR>';
         for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
-        h += '</TR></TABLE></div>';
+        h += '</TR></TABLE>';
+        /* 流月 / 流日 / 流时 三级下钻的容器（三个独立，互不覆盖） */
+        h += '<div id="liuyueBox"></div><div id="liuriBox"></div><div id="liushiBox"></div></div>';
       }
 
       /* ── ④ #btnTable1 ── */
