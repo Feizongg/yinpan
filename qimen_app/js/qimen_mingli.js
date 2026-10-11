@@ -224,7 +224,14 @@
           e2.setAttribute('data-ln-year', String(yy));
           markSel(e1, false); markSel(e2, false);
         }
-        if (e3) e3.innerHTML = '';
+        if (e3) {
+          /* 小运段的第三行给该年的**小运**干支(与第三方流年表同构:
+             其表为「流年 / 干支 / 小运」三行); 大运段那第三行才是神煞。 */
+          let xyArr = (window.baziXiaoYun && data.bzFull)
+            ? window.baziXiaoYun(data.bzFull.pillars, data.gender, cnt) : [];
+          let xg = xyArr[c2] || '';
+          e3.innerHTML = xg ? (ganSpan(xg.charAt(0)) + zhiSpan(xg.charAt(1))) : '';
+        }
       }
       /* 自动选中流年: 当前年若落在小运段内则选它, 否则选**第一个**流年 */
       let nowYY = new Date().getFullYear(), pickLn = 0;
