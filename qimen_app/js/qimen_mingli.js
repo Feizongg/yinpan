@@ -145,7 +145,14 @@
       try { return window.baziYunShenSha(full.pillars, data.gender, gz, lnGz); }
       catch (e) { return { yun: [], ln: [] }; }
     }
-    function gzOfYun(k) { let o = bz.dayun[k] || {}; return o.gz || ((o.g || '') + (o.z || '')); }
+    function gzOfYun(k) {
+      /* 大运序列以 baziChart 为准(其 dayun[0] 是月柱段、1..9 是各步大运,
+         与第三方逐项对拍一致); computeBaZiDaYun 的 dayun 结构不同, 不用于渲染。 */
+      let src = (window._mlData && window._mlData.bzFull && window._mlData.bzFull.dayun)
+        ? window._mlData.bzFull.dayun : bz.dayun;
+      let o = src[k] || {};
+      return o.gz || ((o.g || '') + (o.z || ''));
+    }
     /* 流年格窄(屏宽/10列 ≈ 40px)，4 字全名(天乙贵人 ≈ 44px)物理上放不下必然拆行 ——
        故显示走简称、释义键仍传全名（用 termSpan 的 label 参数）。
        规则: 去掉 贵人/煞/日 后缀; 个别无后缀的四字名单独映射。 */
@@ -192,7 +199,11 @@
        小运段也不施加神煞(与流月/流日同规)。 */
     if (n === 0) {
       let by = (data.qr && data.qr.gongli ? parseInt(dec(data.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
-      let cnt = Math.max(0, Math.min(10, (bz.qiYunYear || by) - by));
+      /* 年数含起运年本身: 如 1992 生、1993 起运 → 1992/1993 共 2 年(1~2 岁)。
+         起运年优先取 baziChart 的交运年 —— computeBaZiDaYun 的 qiYunYear 会给出出生年,
+         用它会把小运段算少一年。 */
+      let qyY = (data.bzFull && data.bzFull.jiaoYun && data.bzFull.jiaoYun.year) || bz.qiYunYear || by;
+      let cnt = Math.max(0, Math.min(10, qyY - by + 1));
       for (let c2 = 0; c2 < 10; c2++) {
         let e1 = document.getElementById('liunian1_' + c2);
         let e2 = document.getElementById('liunian2_' + c2);
@@ -258,6 +269,15 @@
     let selY = lnAll[n * 10 + lnIdx];
     let lyPick = 0;
     if (selY && selY.year === nowY) lyPick = (nowM2 >= 2) ? (nowM2 - 2) : (nowM2 + 10);
+    /* 不得早于该流年的起始月(出生年自出生月起) */
+    if (selY && selY.year === (window.Y || 0)) {
+      let arrS = window.baziLiuYue ? window.baziLiuYue(selY.year) : [];
+      let bdS = new Date(window.Y || 0, (window.M || 1) - 1, window.D || 1);
+      for (let i3 = arrS.length - 1; i3 >= 0; i3--) {
+        let stS = new Date(arrS[i3].solarY, arrS[i3].solarM - 1, arrS[i3].jieD);
+        if (bdS >= stS) { if (lyPick < i3) lyPick = i3; break; }
+      }
+    }
     data.lyIdx = lyPick;
     paintLiuyue(selY ? selY.year : (bz.qiYunYear || nowY), lyPick);
     /* 流日**一律默认不显示** —— 只有用户点流月时才打开(届时默认选中当下日期)。 */
@@ -311,6 +331,18 @@
     let arr = window.baziLiuYue ? window.baziLiuYue(year) : [];
     /* 该流年若是今年 → 只画到"当前所在的节气月"为止, **有几个月显示几个月**,
        未来的月份一律不显示(与流年"有几年显示几年"同一规则)。 */
+    /* 起点: 第一个流年(即出生年)自**出生所在的节气月**起 —— 之前那些月份不能算,
+       如 1992-12-06 生于亥月, 该年流月只有 亥/子/丑 三个月。 */
+    let start = 0;
+    let byY = window.Y || 0;
+    if (year === byY) {
+      let bd = new Date(byY, (window.M || 1) - 1, window.D || 1);
+      for (let i = arr.length - 1; i >= 0; i--) {
+        let st = new Date(arr[i].solarY, arr[i].solarM - 1, arr[i].jieD);
+        if (bd >= st) { start = i; break; }
+      }
+    }
+    /* 终点: 该流年若是今年 → 只到当前所在的节气月 */
     let cap = arr.length, nowD = new Date();
     if (year === nowD.getFullYear()) {
       cap = 0;
@@ -323,7 +355,7 @@
       let e1 = document.getElementById('liuyue1_' + i);
       let e2 = document.getElementById('liuyue2_' + i);
       let m = arr[i];
-      if (!m || i >= cap) {
+      if (!m || i < start || i >= cap) {
         if (e1) { e1.innerHTML = ''; markSel(e1, false); e1.removeAttribute('data-ly-idx'); }
         if (e2) { e2.innerHTML = ''; markSel(e2, false); e2.removeAttribute('data-ly-idx'); }
         continue;
@@ -634,19 +666,25 @@
 
       /* ── ③ #dayun_liunian 大运 + 流年(两个独立 TABLE) ── */
       if (bz && bz.dayun && bz.dayun.length) {
-        let n = Math.min(bz.dayun.length, 10);
+        /* 大运干支一律取 baziChart 的 dayun(含第 0 个=月柱段); 年份自交运年起 */
+        let dyArr = (data.bzFull && data.bzFull.dayun && data.bzFull.dayun.length)
+          ? data.bzFull.dayun : bz.dayun;
+        let n = Math.min(dyArr.length, 10);
 
         h += '<div id="dayun_liunian"><TABLE class="pan">';
         h += '<TR><TD class="yunTitle" rowspan="2">大<br>运</TD>';
         /* 第 1 格固定为「小运」段(起运前) —— 与第三方同构: 该格只标"小运"二字,
            值行给出起运前的岁数区间; 从第 2 格起才是各步大运。 */
-        let qyAge = (bz.qiYunYear || 0) - (window.Y || bz.qiYunYear || 0);
+        /* 小运段岁数区间 = 1 ~ N 岁, N = 起运年 − 出生年 + 1(与流年表年数同源);
+           起运年取 baziChart 的交运年, 不用 computeBaZiDaYun 的 qiYunYear(会给出生年)。 */
+        let qyYr0 = (data.bzFull && data.bzFull.jiaoYun && data.bzFull.jiaoYun.year) || bz.qiYunYear || 0;
+        let qyAge = qyYr0 - (window.Y || qyYr0) + 1;
         if (!(qyAge > 0)) qyAge = 1;
         for (let d = 0; d < n; d++) {
           /* 首格(小运段)与大运格一样可点 —— 小运/大运来回切换, 选中态同款 */
           h += '<TD class="yun1" id="dayun_year' + d + '"' +
                (d === 0 ? ' onclick="mingliYun(0,window._mlData)" style="cursor:pointer;font-size:13px"' : '') + '>' +
-               (d === 0 ? '小运' : (bz.qiYunYear + (d - 1) * 10)) + '</TD>';
+               (d === 0 ? '小运' : (qyYr0 + (d - 1) * 10)) + '</TD>';
         }
         h += '</TR><TR>';
         for (let d2 = 0; d2 < n; d2++) {
@@ -656,11 +694,14 @@
                  '1~' + qyAge + '岁</TD>';
             continue;
           }
-          let dy = bz.dayun[d2], ss = (bz.dayunSS || [])[d2] || '';
+          let dy = dyArr[d2] || {};
+          /* 十神只取**本气**那一个 —— baziChart 的 siShen 是各藏干十神简称的拼接(如伤官财),
+             而第三方每位只显示一个主十神。简称均为单字, 故取首字。 */
+          let ss = String(dy.siShen !== undefined ? dy.siShen : ((bz.dayunSS || [])[d2] || '')).charAt(0);
           let cur = (d2 === data.yunIdx);
           h += '<TD class="yun2" id="dayun' + d2 + '" onclick="mingliYun(' + d2 + ',window._mlData)"' +
                (cur ? ' style="font-weight:bold"' : '') + '>' +
-               ganSpan(dy.g) + '<br>' + zhiSpan(dy.z) + '<br><font class="shishen">' + ss + '</font></TD>';
+               ganSpan(dy.gan || (dy.gz || ' ').charAt(0)) + '<br>' + zhiSpan(dy.zhi || (dy.gz || '  ').charAt(1)) + '<br><font class="shishen">' + ss + '</font></TD>';
         }
         h += '</TR></TABLE>';
 

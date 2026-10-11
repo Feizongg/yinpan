@@ -372,7 +372,9 @@
     for (let i = 0; i < 12; i++) {
       let mm = i + 2, yy = year;
       if (mm > 12) { mm -= 12; yy = year + 1; }        // 丑月落在次年 1 月
-      let jie = jieOfMonth(t, year, mm);
+      /* 注意年号用 yy 而非 year: 丑月的小寒落在**次年 1 月**,
+         用 year 会取到上一年的小寒, 日期差一天。 */
+      let jie = jieOfMonth(t, yy, mm);
       let st = t.SolarTime.fromYmdHms(yy, mm, 15, 12, 0, 0);   // 月中取月柱，避开交节当日
       let mGz = st.getLunarHour().getEightChar().getMonth();
       out.push({
