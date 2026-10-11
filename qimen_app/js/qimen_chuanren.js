@@ -201,6 +201,23 @@ window.chuanRenChart= opts => {
   };
 };
 
+// === 十神: 释义键(全名) ↔ 盘面显示(单字简称) ===
+/* 与 qimen_bazi.js 的 SHISHEN_ABBR 同表(偏印作"枭")。
+   释义表(qimen_term_tips.js 的 SHISHEN_TIPS)的键是**全名**, 而盘面按惯例显示单字简称;
+   window.termSpan(cat, name, colorStyle, label) 用 name 查表、用 label 显示 —— 所以渲染前
+   必须把简称还原成全名(命理盘 qimen_bazi.js 的 tenFull 同一做法)。
+   注: 本文件在 bundle 里排在 qimen_bazi.js 之前, 不能借用它的内部函数, 故自备一张反向表。 */
+let SS_ABBR={'比肩':'比','劫财':'劫','食神':'食','伤官':'伤','偏财':'才',
+             '正财':'财','七杀':'杀','正官':'官','偏印':'枭','正印':'印'};
+let SS_FULL={};
+for(let _k in SS_ABBR)SS_FULL[SS_ABBR[_k]]=_k;
+/* 简称 → 全名(已是全名或空值时原样返回, 与 tenFull 同语义) */
+function ssFull(short){
+  if(!short)return short;
+  if(SS_ABBR[short]!==undefined)return short;
+  return SS_FULL[short]||short;
+}
+
 // === 八字大运计算 (口径统一: 委托 tyme4ts) ===
 /* 本函数原先自算起运岁数/十神/十二长生 —— 三处同源出错, 且都与项目基准(tyme4ts)不同源:
      ① 起运 取 solarDay.getTerm().next(1): 那是**中气**(如立秋→处暑), 应取**节**(→白露);
@@ -252,22 +269,22 @@ window.computeBaZiDaYun= opts => {
     dayun.push({gz:gz,g:gz[0],z:gz[1],age:qiYunSui+i*10,year:qiYunYear+i*10});
   }
 
-  /* 十神: 一律走 tyme getTenStar(简称表与 qimen_bazi.js 的 SHISHEN_ABBR 同表, 偏印作"枭") */
+  /* 十神: 一律走 tyme getTenStar(简称表见模块级 SS_ABBR, 偏印作"枭") */
   let dayGan=T.HeavenStem.fromName(bz[2].g);
-  let SS_ABBR={'比肩':'比','劫财':'劫','食神':'食','伤官':'伤','偏财':'才',
-               '正财':'财','七杀':'杀','正官':'官','偏印':'枭','正印':'印'};
   function ssOf(gan){return SS_ABBR[dayGan.getTenStar(T.HeavenStem.fromName(gan)).getName()]||'';}
   let shishen=bzFull.pillars.map(p => ssOf(p.gan));   // 日柱对自身 = 比肩
 
-  /* 藏干: 表与字序保持原样(渲染顺序依赖它); 藏干十神取 baziChart 同柱的 cang(逐字对齐,
-     不再按五行自排) —— tyme 的 HideHeavenStem 与本表所列藏干完全相同, 只是排列次序不同 */
-  let cangGanMap=QM.CANG_GAN||{子:'癸',丑:'癸辛己',寅:'甲丙戊',卯:'乙',辰:'乙戊癸',巳:'丙庚戊',午:'丁己',未:'乙己丁',申:'庚壬戊',酉:'辛',戌:'辛丁戊',亥:'壬甲'};
-  let cangGan=bzFull.pillars.map(p => {return cangGanMap[p.zhi]||'';});
-  let cgSS=[];
-  bzFull.pillars.forEach((p, i) => {
-    let shenOf={}; (p.cang||[]).forEach(c => {shenOf[c.gan]=c.shen;});
-    let cs=cangGan[i]||'';
-    for(let j=0;j<3;j++){let ch=cs[j]; cgSS.push(ch?(shenOf[ch]||ssOf(ch)):'');}
+  /* 藏干: 字序与十神**一律取 tyme**(baziChart 的 pillars[].cang = EarthBranch.getHideHeavenStems(),
+     本气→中气→余气; 每项的 shen 已是简称)。原先此处用 QM.CANG_GAN 的字序, 再由渲染端排成
+     c2,c0,c1 —— 该排列与 tyme 次序在 寅/辰/巳/未/申 五支上不同, 且与紧随其后的藏干十神错位
+     (同一格里藏干字与十神对不上)。改为逐字取自 tyme 后, 藏干与它自己的十神天然逐字对齐。
+     数组形状保持不变: cangGan 每柱一个字符串, cgSS 每柱固定 3 槽(不足补空串), 供渲染端按
+     i*3+j 取用。 */
+  let cangGan=[],cgSS=[];
+  bzFull.pillars.forEach(p => {
+    let list=p.cang||[];
+    cangGan.push(list.map(c => c.gan).join(''));
+    for(let j=0;j<3;j++){cgSS.push(list[j]?list[j].shen:'');}
   });
 
   // 纳音 / 地势 / 自坐 / 空亡: 全部取 baziChart(地势=日干对该柱地支, 自坐=本柱天干对该支)
@@ -319,6 +336,14 @@ window.renderChuanRen=(data,containerId) => {
      全项目一张表, 盘头/外圈/三传/大运各处同字同色。 */
   function wxSpan(s){return QM.wxSpan?QM.wxSpan(s):(s||'');}
   function wxSpanX(s){return wxSpan(s);}
+  /* 术语可点释义: 与命理盘(qimen_bazi.js baziMainRows)同一套 —— 有 window.termSpan 就渲染成
+     可点元素(点击弹 qimen_term_tips.js / qimen_shensha_tips.js 的释义), 未加载则退回纯文本。
+     十神这类"释义键是全名、盘面显示简称"的, 第 4 参传显示用简称(label)。 */
+  function term(cat,name,label){
+    if(!window.termSpan)return (label||name||'');
+    return window.termSpan(cat,name,'',label);
+  }
+  function termSS(short){return term('十神',ssFull(short),short);}
 
   let h='';
 
@@ -326,9 +351,13 @@ window.renderChuanRen=(data,containerId) => {
   let isKe=d.shiKe==='刻家';
   let keGan=d.keGzStr?d.keGzStr[0]:'',keZhi=d.keGzStr?d.keGzStr[1]:'';
   let cols=isKe?5:4;
+    /* 时辰 0 时(子时)是合法值, 不能写成 `d.opts.hour||12` —— 0 是 falsy, 会被换成 12,
+       于是盘头「四柱」按子时显示、而下面这几行八字信息(十神/藏干/纳音/地势/自坐)按午时算,
+       两者不同源(实拍: 2027-01-01 00:35 盘头时柱丙子, 八字行却是壬午那一路的纳音/藏干)。 */
+    let bzHour=(d.opts.hour==null?12:d.opts.hour);
     let bzdy=window.computeBaZiDaYun({
       year:d.opts.year||2026, month:d.opts.month||7, day:d.opts.day||5,
-      hour:d.opts.hour||12, gender:d.opts.gender||'男'
+      hour:bzHour, gender:d.opts.gender||'男'
     });
     let ssg=bzdy.shishen||[], cg=bzdy.cangGan||[], cgS=bzdy.cgSS||[];
     let dishi=bzdy.dishi||[], zizuo=bzdy.zizuo||[], xk=bzdy.xunKong||[];
@@ -342,8 +371,9 @@ window.renderChuanRen=(data,containerId) => {
   h+='<TR class="tdTitle"><TD>月将</TD><TD>年命</TD><TD>用神</TD><TD colspan="'+(isKe?3:2)+'">贵人</TD></TR>';
   h+='<TR><TD>'+d.yueJiang.name+'</TD><TD>'+(d.opts.nianMing||'子')+'</TD><TD>'+(d.opts.yongShen||d.riGz||'')+'</TD><TD colspan="'+(isKe?3:2)+'">'+(d.opts.guiRen||'阳贵')+' ('+(d.opts.gender||'男')+') '+(d.guiRen.sun?'顺':'逆')+'</TD></TR>';
     // 十神行置于四柱之上(与命理盘同序: 十神在上、四柱在下)
+    /* 「日元」不是十神, 不参与点击释义(与命理盘 baziMainRows 同规) */
     h+='<TR><TD>十神</TD>';
-    bzdy.bz.forEach((b, i) => {h+='<TD>'+(i===2?'日元':ssg[i])+'</TD>';});
+    bzdy.bz.forEach((b, i) => {h+='<TD>'+(i===2?'日元':(ssg[i]?termSS(ssg[i]):''))+'</TD>';});
     h+='</TR>';
     // 四柱标题+数据(紧接十神下方)
     h+='<TR class="tdTitle"><TD>'+(isKe?'五柱':'四柱')+'</TD><TD class="sizhuTitle">年柱</TD><TD class="sizhuTitle">月柱</TD><TD class="sizhuTitle">日柱</TD><TD class="sizhuTitle">时柱</TD>'+(isKe?'<TD class="sizhuTitle">刻柱</TD>':'')+'</TR>';
@@ -358,24 +388,32 @@ window.renderChuanRen=(data,containerId) => {
     // 干支已在盘头「四柱」处显示, 此处不再重复(表头保留供十神/藏干等行对齐)
     h+='<TR><TD>藏干</TD>';
     bzdy.bz.forEach((b, i) => {
-      let c0=cg[i][0]||'',c1=cg[i][1]||'',c2=cg[i][2]||'';
-      h+='<TD>'+ws(c2)+ws(c0)+ws(c1)+'<br><span class="cr-bz-cgss">'+cgS[i*3]+' '+cgS[i*3+1]+' '+cgS[i*3+2]+'</span></TD>';
+      /* 藏干字按 tyme 次序(getHideHeavenStems)逐字着色; 其下的十神与它逐字对齐
+         (cgS 与 cg 同源同序, 见 computeBaZiDaYun), 每个十神可点弹释义 */
+      let cs=cg[i]||'',chars='';
+      for(let k=0;k<cs.length;k++)chars+=ws(cs[k]);
+      let ss='';
+      for(let k=0;k<3;k++){let t=cgS[i*3+k]||'';ss+=(t?termSS(t):'')+(k<2?' ':'');}
+      h+='<TD>'+chars+'<br><span class="cr-bz-cgss">'+ss+'</span></TD>';
     });
     h+='</TR>';
+    /* 纳音/地势(十二长生)/自坐 三行的词条都可点弹释义(释义表见 qimen_term_tips.js);
+       空亡是"戌亥"这类组合, 与命理盘一样不做点击 */
     h+='<TR><TD>纳音</TD>';
-    bzdy.nayin.forEach(n => {h+='<TD>'+n+'</TD>';});
+    bzdy.nayin.forEach(n => {h+='<TD>'+(n?term('纳音',n):'')+'</TD>';});
     h+='</TR>';
     h+='<TR><TD>地势</TD>';
-    dishi.forEach(d => {h+='<TD>'+d+'</TD>';});
+    dishi.forEach(d => {h+='<TD>'+(d?term('长生',d):'')+'</TD>';});
     h+='</TR>';
     h+='<TR><TD>自坐</TD>';
-    zizuo.forEach(d => {h+='<TD>'+d+'</TD>';});
+    zizuo.forEach(d => {h+='<TD>'+(d?term('长生',d):'')+'</TD>';});
     h+='</TR>';
     h+='<TR><TD>空亡</TD>';
     xk.forEach(k => {h+='<TD>'+k+'</TD>';});
     h+='</TR>';
-  // 四柱: 此处不再重复列出 —— 下方 .cr-bz-tbl 已给出完整四柱(十神/乾造/藏干/
-  //       纳音/地势/自坐/空亡/神煞), 盘头再列一遍干支属冗余; 去掉后盘头更紧凑
+  /* 四柱以下的八字信息行(十神/藏干/纳音/地势/自坐/空亡)就在上面这张盘头表里, 与四柱同表对齐;
+     本盘**不渲染神煞行**(computeBaZiDaYun 亦不返回 sha), 故神煞无可点化对象。
+     (旧注释称"下方 .cr-bz-tbl 已给出完整四柱…神煞", 该表在渲染端早已不存在, 一并更正。) */
   // 颜色
   h+='<TR><TD style="color:var(--c-gold);font-size:12px">颜色</TD><TD colspan="'+cols+'" style="font-size:12px;line-height:20px">'+
     '<font style="color:var(--c-mu)">入墓</font> <font style="color:var(--c-xing)">击刑</font> <font style="color:var(--c-po)">门破</font> <font style="color:var(--c-xingmu)">刑墓</font></TD></TR>';
@@ -386,7 +424,7 @@ window.renderChuanRen=(data,containerId) => {
   let qimenGridHTML='';
   try{
     if(window.qimenChart&&window.buildPaipanGrid){
-      let qopts={year:d.opts.year||2026,month:d.opts.month||7,day:d.opts.day||5,hour:d.opts.hour||12,minute:d.opts.minute||0,panType:d.shiKe==='刻家'?2:1};
+      let qopts={year:d.opts.year||2026,month:d.opts.month||7,day:d.opts.day||5,hour:bzHour,minute:d.opts.minute||0,panType:d.shiKe==='刻家'?2:1};
       if(d.customJu)qopts.customJu=d.customJu;
       let qr=d.qr||window.qimenChart(qopts);   // 复用上面算好的那次, 拿不到再算
       if(qr&&qr.pals){

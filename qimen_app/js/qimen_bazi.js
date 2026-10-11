@@ -2,7 +2,7 @@
  *
  * 用途: 八字的十神/藏干/纳音/地势/自坐/空亡/神煞/胎元·命宫·身宫/交运
  *       已并入命理主盘(见 qimen_mingli.js), 由 baziMainRows() 提供那几行;
- *       renderBazi() 保留完整传统盘版式(四柱+大运+流年)备用。
+ *       renderBazi() 保留完整传统盘版式(四柱+大运+流年)备用 —— 当前无调用方, 见其注释。
  * 计算: tyme4ts (window.tyme); 配色走主题变量, 暗色自动适配
  *
  * 各字段取法(全部由 tyme4ts 计算得出):
@@ -454,6 +454,10 @@
     /* 早晚子时: 默认晚子时日柱算次日; 开启后算当天(晚子时算当天)。
        tyme 的 LunarHour.getEightChar() 不接受参数, 只能临时改静态 provider, 用完还原。 */
     let ec;
+    /* ⚠ 备用；当前无入口(全项目无调用): 没有任何调用方传 o.zaoWanZi, 故本分支恒不走。
+       两口径确有差异(**不是等价写法**): tyme 默认(DefaultEightCharProvider)晚子时日柱算**次日**;
+       走本分支(LunarSect2)才算**当天** —— 实测 5 例 23 点生辰日柱差一位, 早子时两口径相同。
+       若要启用「晚子时算当天」, 需补 UI 入口把此参数传进来。勿误以为在用、勿误删。 */
     if (o.zaoWanZi) {
       let oldProvider = t.LunarHour.provider;
       t.LunarHour.provider = new t.LunarSect2EightCharProvider();
@@ -698,6 +702,9 @@
   }
 
   /* ══════════════ 渲染(传统模式) ══════════════ */
+  /* ⚠ 备用；当前无入口(全项目无调用): 仅被下面的 showBaziPan() 调用, 而它自己也无调用方 ——
+     命理盘实际走 qimen_mingli.js 的 baziMainRows。勿误以为在用、勿误删(补 UI 入口即可复活;
+     「晚子时算当天」同为无入口的备用路径, 见 baziChart 的 o.zaoWanZi)。 */
   function renderBazi(d) {
     if (!d) return '';
     let h = '<div class="panDiv bz-pan">';
@@ -760,6 +767,9 @@
   }
 
   /* ══════════════ 入口: 命理模块「八字排盘」按钮 ══════════════ */
+  /* ⚠ 备用；当前无入口(全项目无调用): HTML 与各 JS 均不调用它, 只有文件尾 window.showBaziPan
+     导出 —— 八字显示实际走 qimen_mingli.js 的 mingliChart。勿误以为在用、勿误删(补 UI 入口
+     即可复活; 「晚子时算当天」同为无入口的备用路径, 见 baziChart 的 o.zaoWanZi)。 */
   function showBaziPan() {
     try {
       let box = document.getElementById('yixinghuandouDIV');
@@ -787,6 +797,6 @@
   window.baziChart = baziChart;
   window.baziMainRows = baziMainRows;
   window.baziJiaoYunBlock = baziJiaoYunBlock;
-  window.renderBazi = renderBazi;
-  window.showBaziPan = showBaziPan;
+  window.renderBazi = renderBazi;         /* ⚠ 备用；当前无入口(全项目无调用), 见上方 renderBazi 注释 */
+  window.showBaziPan = showBaziPan;       /* ⚠ 备用；当前无入口(全项目无调用), 见上方 showBaziPan 注释 */
 })();
