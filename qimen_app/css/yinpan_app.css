@@ -887,9 +887,10 @@ body.mode-mingli #mainDIV{ overflow: visible }
   display: flex; flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;                    /* 高度由 .sz-bar 的内联高度(与原行等高)决定 */
-  border: 1px solid var(--c-border);
-  border-left: none;               /* 只留一条列线: 与 #headTable 的折叠边框等效 */
+  min-height: 100%;                /* 高度由 .sz-bar 决定; 内容更高时允许撑开 */
+  /* padding 不在此写死: 原行 td 的 padding 是**响应式**的(实测 480 下 2px、1069 下 6px),`n     写死会让固定条与原行不等高(实测小视口差 8px)。改由 JS 从原 td 逐格复制。 */
+  border-left: 1px solid var(--c-border); border-right: 1px solid var(--c-border);
+  /* 只留左右列线; 上下不设边框 —— 上下由 .sz-bar 的 border-top 与高度负责,`n     多出的上下 1px 会让固定条比原行高 2px(实测)。 */
   background: var(--c-bg);
   font-size: var(--pan-sz-v);
   line-height: var(--pan-lh-v);
@@ -900,3 +901,7 @@ body.mode-mingli #mainDIV{ overflow: visible }
 }
 .sz-bar-cell:first-child{ color: var(--c-gold) }   /* 乾造/坤造 标签与表内一致 */
 .sz-bar-cell > *{ margin: 0 }
+
+/* 固定条是 flex **列向**容器, 已按元素天然分行; 原行 innerHTML 里的 <br> 在此会成为
+   一个额外的 flex item, 凭空多出一行(实测固定条比原行高 34px)。故隐藏之。 */
+.sz-bar-cell br{ display: none }

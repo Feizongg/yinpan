@@ -668,7 +668,10 @@
                       '<span class="cx-po">门迫</span>、<span class="cx-xingmu">刑+墓</span>';
         /* 四柱行: 标签按性别作 乾造/坤造(与其它标签同为金色), 交 baziMainRows 插到十神行之下 */
         /* 标签竖排(与大运/流年/流月的左侧标签一致) */
-        let zaoLabel = ((data.gender === '女') ? '坤造' : '乾造').split('').join('<br>');
+        /* 用 span 包裹每个字: 固定条是 flex 列向容器(且隐藏了 br), 相邻的**纯文本节点**会被
+           合并成一个 flex item 而变回横排; 用元素才能保证逐字成行。 */
+        let _zl = (data.gender === '女') ? '坤造' : '乾造';
+        let zaoLabel = '<span>' + _zl.charAt(0) + '</span><br><span>' + _zl.charAt(1) + '</span>';
         /* 标签样式与「出生」「节气」等左侧标签完全相同(内联金色, 不用 .hd-side
            —— 那个类另有 12px 字号与 2px 字距, 会比其它标签小而散)。 */
         let sizhuRow = '<TR id="sizhu" class="hd-row"><TD style="color:var(--c-gold)">' + zaoLabel + '</TD>';
@@ -865,7 +868,22 @@
       });
     }
     _bar.style.width = r.width + 'px';
-    _bar.style.height = r.height + 'px';   /* 与四柱行等高, 接替时不留错位 */
+    /* 高度取**下限**而非定高: .sizhu-v 的字号是响应式的(桌面 30px/行高 34px, 竖排两行需 68px),
+       若在此锁死测量瞬间的高度, 竖排内容会被截断(实测桌面下"丙/午"只露下半)。
+       故用 min-height: 内容更高时自动撑开, 不高时与原行等高、接替不留错位。 */
+    /* 逐格复制原 td 的 padding —— 它是响应式的, 写死会让固定条与原行不等高。 */
+    {
+      let _tds = document.querySelectorAll('#sizhu td');
+      for (let _i = 0; _i < _bar.children.length; _i++) {
+        let _c = _bar.children[_i], _t = _tds[_i];
+        if (_c && _t) {
+          let _cs = getComputedStyle(_t);
+          _c.style.padding = _cs.paddingTop + ' ' + _cs.paddingRight + ' ' + _cs.paddingBottom + ' ' + _cs.paddingLeft;
+        }
+      }
+    }
+    _bar.style.height = 'auto';
+    _bar.style.minHeight = r.height + 'px';
     for (let i = 0; i < tds.length; i++) {
       let cell = _bar.children[i];
       cell.style.flex = '0 0 ' + _colW[i] + 'px';
