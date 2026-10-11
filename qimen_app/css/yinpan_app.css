@@ -819,3 +819,84 @@ body.mode-mingli{ --pan-fs-sz:20px; --pan-lh-sz:24px }
 /* 穿壬盘表头用 class 版 —— 同一渲染里出现 3 个表头, 用 id 会重复;
    本盘不在 #panHead 下, 故此处补上与 #tdTitle td 等价的配色。 */
 .tdTitle td{color:var(--c-gold)}
+
+/* ══════════════════════════════════════════════════════════════════
+   命理盘·四柱行吸附顶部 (用户 2026-10-01: 向下滚动时四柱「始终显示」)
+   ──────────────────────────────────────────────────────────────────
+   ① 吸附位置: top = #topBar 实际高度。实测 480x900 视口下
+      getBoundingClientRect() 为 [0..34] h=34.00 (box-sizing:border-box,
+      34px 已含 1px 下边框), 与 CSS 里写死的 height:34px 一致。抽成变量便于维护。
+   ② sticky 必须设在**该行每个 TD** 上: <TR> 上的 position:sticky 在 Chrome 下
+      不可靠(表格行的 sticky 未按规范实现)。
+   ③ 选中 td 而非 tr#sizhu: 保住 #sizhu 这个 id 供 JS 使用, 且只作用于命理四柱行。
+   ④ 第四行(sticky)必须不透明 —— .pan td 已给 var(--c-bg), 但 #panHead td 的
+      背景规则更弱会被覆盖, 这里显式写一次, 免得下方内容透出来。
+   ⑤ z-index 取 10: 要盖住盘面(isolate 内), 又必须低于 #topBar 的 z-index:1000。 */
+:root{ --topbar-h: 34px }   /* = #topBar 实测高度(见 ①) */
+body.mode-mingli #panHead #headTable tr#sizhu > td{
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 10;
+  background: var(--c-bg);
+  /* 吸顶后必须与下方内容有硬分隔: #topBar 自带 1px 下边框, 但滚动时本行的
+     border-top 会先滚出视口, 故用 box-shadow 补"上边线 + 下方投影" */
+  border-top: 1px solid var(--c-border);
+  box-shadow: 0 3px 5px -3px rgba(0,0,0,.28);
+}
+
+/* ── ⑥ 必做: 放开祖先链上的 overflow ──
+   sticky 的参照系是"最近的滚动祖先"; 祖先只要 overflow ≠ visible 就**成为**
+   滚动容器, 即使它本身滚不动(scrollHeight == clientHeight), sticky 也会失效。
+   实测基线(未放开时)滚到最大滚动量, 四柱行 top 从 225.5 掉到 -364.5 —— 完全没吸住。
+   命理盘这条链上有四处: #panHead 的 .bz-pan{overflow:auto}、#mainDIV/#result/#panWrap
+   的 overflow-x:hidden(overflow-x:hidden 会把 overflow-y 算成 auto)。四处都要放开,
+   少一处即失效。
+   作用域限定 body.mode-mingli: 其它盘型(时/刻/心/山向/穿壬)的分隔与横向裁剪
+   行为完全不变 —— 尤其穿壬十二地支卡片靠 #panWrap 的裁剪兜底。
+   命理盘自身不含超出容器的绝对定位元素, 放开后不产生横向滚动(实测验证)。 */
+body.mode-mingli #panHead,
+body.mode-mingli #panWrap,
+body.mode-mingli #result,
+body.mode-mingli #mainDIV{ overflow: visible }
+
+/* ── ⑦ 吸附行程: CSS sticky 与 fixed 固定条的分工 ──
+   实测(受控实验): td 的包含块是 <tbody> 的内容盒 —— 只有 tbody 变高, 吸附失效的临界
+   滚动量才跟着变大(尾部加一行 1200px 高行 → 临界从 595 变 1799); 改 tr 高度 /
+   table 的 padding 都无效。命理信息表只有 591px 高, 而命理盘文档约 1500px, 于是
+   四柱行滚过九宫格就脱开, 达不到用户要的"始终显示"。
+   试过在 tbody 末尾插"撑高行"把包含块拉长: 能吸住, 但它改变文档高度, 而 Chrome 对
+   sticky 做惰性布局 —— 同一页面同一滚动量会量到 top=34(吸住)与 top=-1274(脱开)两种
+   结果, 不稳定, 故放弃。
+   最终分工: 上面第 ⑤⑥ 条的 sticky 负责近距离吸附(且无 JS 时行为不退化); 滚动越过
+   四柱行原位后, 由 qimen_mingli.js 的固定条 .sz-bar 接管 —— 它按四柱行实测列宽
+   逐列复刻(实测列宽/左边界误差 0.000px; 亮色与暗色下背景、字号、字重与原格一致),
+   故与四柱行视觉无差别。实测(480x600): 滚动前四柱行 top=225.5, 滚到 890 时固定条
+   top=34(= #topBar 下沿)、相对顶栏 0, 回顶部又回到 225.5; 切盘型/缩放后仍成立。 */
+.sz-bar{
+  position: fixed;
+  top: var(--topbar-h);            /* 与 sticky 的 top 同源: 盘型选择器正下方 */
+  z-index: 999;                    /* 低于 #topBar(1000) 与 #bottomBar(9999) */
+  display: none;                   /* 未吸顶时不占位; 由 JS 切 flex */
+  box-sizing: border-box;
+  background: var(--c-bg);
+  border-top: 1px solid var(--c-border);
+  box-shadow: 0 3px 5px -3px rgba(0,0,0,.28);
+}
+.sz-bar-cell{
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;                    /* 高度由 .sz-bar 的内联高度(与原行等高)决定 */
+  border: 1px solid var(--c-border);
+  border-left: none;               /* 只留一条列线: 与 #headTable 的折叠边框等效 */
+  background: var(--c-bg);
+  font-size: var(--pan-sz-v);
+  line-height: var(--pan-lh-v);
+  font-weight: bold;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sz-bar-cell:first-child{ color: var(--c-gold) }   /* 乾造/坤造 标签与表内一致 */
+.sz-bar-cell > *{ margin: 0 }

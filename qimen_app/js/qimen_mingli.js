@@ -809,11 +809,94 @@
       let el = document.getElementById(containerId);
       if (el) el.innerHTML = h;
     }
+    _stickyBuilt = false;     /* 每次渲染都重建四柱固定条(见 ensureStickyBar) */
     return h;
   };
 
+  /** 四柱行吸附顶部: 在 CSS sticky 之外补一条 fixed 固定条(原理说明见 css 第 ⑦ 节)
+   *
+   *  为什么不能只靠 position:sticky: td 的包含块是 <tbody> 的内容盒(受控实验证实 ——
+   *  只有 tbody 变高, 吸附失效的临界滚动量才跟着变大; 改 tr 高度 / table 的 padding
+   *  都无效)。命理信息表只有 591px 高, 而命理盘文档约 1500px —— 四柱行滚过九宫格就
+   *  脱开, 达不到"始终显示"。
+   *  试过在 tbody 末尾插"撑高行"把包含块拉长: 能吸住, 但它改变了文档高度, 而 Chrome
+   *  对 sticky 做惰性布局 —— 同一页面同一滚动量会量到 top=34(吸住)与 top=-1274(脱开)
+   *  两种结果, 不稳定, 故放弃。
+   *
+   *  现在的做法: CSS 保留 sticky(近距离吸附由它负责, 无 JS 时行为也不退化), 另在滚动
+   *  越过四柱行原位时显示一条 .sz-bar 固定条 —— 按四柱行**实测列宽**逐列复刻的 flex
+   *  行(实测列宽与左边界误差均为 0.000px), 内容取四柱行原样的 innerHTML, top 与
+   *  sticky 的 --topbar-h 同源, 故视觉上与四柱行完全一致。 */
+  let _stickyBuilt = false, _sizhuTopDoc = 0, _colW = null, _bar = null, _barListeners = false;
+  function ensureStickyBar() {
+    if (_stickyBuilt) return;
+    let tr = document.getElementById('sizhu');
+    if (!tr) return;
+    let tds = tr.querySelectorAll('td');
+    if (tds.length < 2) return;
+    let wrap = document.getElementById('panWrap');
+    if (!wrap) return;
+    /* 列宽必须在四柱行"在原位"时量 —— 那时才与 #headTable 的列严格对齐 */
+    let r = tr.getBoundingClientRect();
+    _sizhuTopDoc = r.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+    _colW = [];
+    for (let i = 0; i < tds.length; i++) _colW.push(+tds[i].getBoundingClientRect().width.toFixed(3));
+    /* doMingli 用 panWrap.innerHTML 整体重渲染, 旧固定条会随旧 DOM 一起被丢弃 ——
+       此时必须重建, 否则切回命理盘后固定条永远不出现(实测踩过)。 */
+    if (_bar && !wrap.contains(_bar)) _bar = null;
+    if (!_bar) {
+      _bar = document.createElement('div');
+      _bar.className = 'sz-bar';
+      for (let i = 0; i < tds.length; i++) {
+        let d = document.createElement('div');
+        d.className = 'sz-bar-cell';
+        _bar.appendChild(d);
+      }
+      wrap.appendChild(_bar);
+    }
+    if (!_barListeners) {
+      _barListeners = true;                  /* 监听器只注册一次, 内部走 _bar 变量 */
+      window.addEventListener('scroll', syncStickyBar, { passive: true });
+      window.addEventListener('resize', function () {
+        _stickyBuilt = false;                /* 视口变了: 列宽要重测 */
+        if (!_bar || !document.body.contains(_bar)) _bar = null;
+        ensureStickyBar();
+      });
+    }
+    _bar.style.width = r.width + 'px';
+    _bar.style.height = r.height + 'px';   /* 与四柱行等高, 接替时不留错位 */
+    for (let i = 0; i < tds.length; i++) {
+      let cell = _bar.children[i];
+      cell.style.flex = '0 0 ' + _colW[i] + 'px';
+      cell.innerHTML = tds[i].innerHTML;
+    }
+    _stickyBuilt = true;
+    syncStickyBar();
+  }
+
+  function syncStickyBar() {
+    if (!_stickyBuilt || !_bar) return;
+    let tr = document.getElementById('sizhu');
+    if (!tr || !tr.querySelector('td')) return;
+    let wrap = document.getElementById('panWrap');
+    if (!wrap) return;
+    let barH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 34;
+    let y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (y >= _sizhuTopDoc - barH - 1) {
+      /* 生效期间原行留在文档流里占位(不动它的布局), 视觉上由固定条替代 */
+      tr.style.visibility = 'hidden';
+      _bar.style.display = 'flex';
+      _bar.style.left = wrap.getBoundingClientRect().left + 'px';
+    } else {
+      tr.style.visibility = '';
+      _bar.style.display = 'none';
+    }
+  }
+  window.mingliSyncStickyBar = syncStickyBar;
+
   /** 命理盘渲染后处理: 宫位正方形 + 左右行高同步 + 阴干对齐(照时盘/山向) */
   window.mingliFixLayout = function () {
+    if (!_stickyBuilt) { try { ensureStickyBar(); } catch (e) { if (window._logErr) window._logErr('mingli.stickyBar', e && e.message); } }
     let wrap = document.getElementById('panWrap');
     if (!wrap) return;
     let box = wrap.querySelector('#content');
