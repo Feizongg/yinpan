@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  var CATS = {
+  const CATS = {
     '神煞': { table: 'SHENSHA_TIPS', title: '神煞', showJX: true, file: 'qimen_shensha_tips.js' },
     '十神': { table: 'SHISHEN_TIPS', title: '十神', showJX: false, file: 'qimen_term_tips.js' },
     '长生': { table: 'ZHANGSHENG_TIPS', title: '十二长生', showJX: false, file: 'qimen_term_tips.js' },
@@ -24,7 +24,7 @@
   }
 
   function overlay() {
-    var ov = document.getElementById('termTipOverlay');
+    let ov = document.getElementById('termTipOverlay');
     if (ov) return ov;
     ov = document.createElement('div');
     ov.id = 'termTipOverlay';
@@ -40,7 +40,7 @@
     return ov;
   }
 
-  var JX_STYLE = {
+  const JX_STYLE = {
     '吉': 'background:var(--wx-mu,#3a7);color:#fff',
     '凶': 'background:var(--wx-huo,#c33);color:#fff',
     '中': 'background:var(--c-text-3,#888);color:#fff'
@@ -49,7 +49,7 @@
   /* 盘面显示用的是项目惯用的简称（国印/文昌/红艳/童子），
      而释义表的键是全名（国印贵人/文昌贵人/红艳煞/童子煞）——
      这里做一次归一把简称映射到释义键，否则这几条点了会显示"暂无释义"。 */
-  var ALIAS = {
+  const ALIAS = {
     '神煞': {
       '国印': '国印贵人',
       '文昌': '文昌贵人',
@@ -59,19 +59,19 @@
   };
 
   function resolveName(cat, name) {
-    var m = ALIAS[cat];
+    let m = ALIAS[cat];
     return (m && m[name]) ? m[name] : name;
   }
 
   /* 主入口: showTermTip('神煞', '天乙贵人') */
   window.showTermTip = function (cat, name) {
-    var cfg = CATS[cat] || CATS['神煞'];
-    var table = (window.QM && window.QM[cfg.table]) || null;
-    var key = resolveName(cat, name);
-    var item = table ? table[key] : null;
-    var ov = overlay();
+    let cfg = CATS[cat] || CATS['神煞'];
+    let table = (window.QM && window.QM[cfg.table]) || null;
+    let key = resolveName(cat, name);
+    let item = table ? table[key] : null;
+    let ov = overlay();
 
-    var h = '<div style="background:var(--c-bg,#fff);border-radius:12px;padding:16px;' +
+    let h = '<div style="background:var(--c-bg,#fff);border-radius:12px;padding:16px;' +
       'max-width:400px;width:92%;max-height:var(--vh85,85vh);overflow-y:auto;' +
       'box-shadow:0 8px 30px rgba(0,0,0,.25)">';
 
@@ -108,13 +108,13 @@
 
     ov.innerHTML = h;
     ov.style.display = 'flex';
-    var btn = document.getElementById('termTipClose');
+    let btn = document.getElementById('termTipClose');
     if (btn) btn.onclick = function () { ov.style.display = 'none'; };
   };
 
   /* 盘面上神煞名词的吉凶着色 —— 与释义表里的 jx 严格一致，
      用的是一套独立的"语义色"变量(不是五行色, 免得绿=木/红=火与吉凶混淆)。 */
-  var JX_COLOR = {
+  const JX_COLOR = {
     '吉': 'var(--sha-ji,#2e7d32)',
     '凶': 'var(--sha-xiong,#c62828)',
     '中': 'var(--sha-ping,#7a7a7a)'
@@ -125,11 +125,11 @@
      label = 盘面上显示的文字（可省；省略则同 name）。
      十神这类"表里键为全名、盘面显示简称"的，靠 label 保住原有显示。 */
   window.termSpan = function (cat, name, colorStyle, label) {
-    var cfg = CATS[cat] || CATS['神煞'];
-    var table = (window.QM && window.QM[cfg.table]) || null;
-    var item = table ? table[resolveName(cat, name)] : null;
-    var st = 'cursor:pointer;';
-    var attr = '';
+    let cfg = CATS[cat] || CATS['神煞'];
+    let table = (window.QM && window.QM[cfg.table]) || null;
+    let item = table ? table[resolveName(cat, name)] : null;
+    let st = 'cursor:pointer;';
+    let attr = '';
     if (cfg.showJX && item && item.jx && JX_COLOR[item.jx]) {
       st += 'color:' + JX_COLOR[item.jx] + ';' + (item.jx === '吉' ? 'font-weight:bold;' : '');
       attr = ' title="' + esc(item.jx) + '·' + esc(name) + '"';
@@ -144,7 +144,7 @@
   /* 事件委托：任何带 data-term-name 的元素被点击都会弹释义
      （用委托而非内联 onclick，避免名词里出现引号时破坏 HTML） */
   document.addEventListener('click', function (e) {
-    var el = e.target;
+    let el = e.target;
     while (el && el !== document.body) {
       if (el.getAttribute && el.getAttribute('data-term-name')) {
         window.showTermTip(el.getAttribute('data-term-cat') || '神煞',

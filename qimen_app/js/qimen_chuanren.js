@@ -394,16 +394,16 @@ window.renderChuanRen=(data,containerId) => {
   h+='<TR><TD id="dTitle">日期</TD><TD colspan="'+cols+'" id="dateTime">'+d.gongli+' ('+d.nongli+')</TD></TR>';
   let juTitle=d.juLabel+(d.customJu?'<b>自选</b>':'')+(isKe?' <b>刻家</b>':'');
   h+='<TR><TD style="color:var(--c-gold)">节气</TD><TD colspan="'+Math.floor(cols/2)+'">'+d.jieqi+(d.isFuYin?' <b style=color:#c00>伏吟</b>':'')+'</TD><TD colspan="'+Math.ceil(cols/2)+'">'+juTitle+'</TD></TR>';
-  h+='<TR id="tdTitle"><TD>值符</TD><TD>值使</TD><TD>旬首</TD><TD>空亡</TD><TD>马星</TD>'+(isKe?'<TD></TD>':'')+'</TR>';
+  h+='<TR class="tdTitle"><TD>值符</TD><TD>值使</TD><TD>旬首</TD><TD>空亡</TD><TD>马星</TD>'+(isKe?'<TD></TD>':'')+'</TR>';
   h+='<TR><TD>'+d.zhiFu+'</TD><TD>'+d.zhiShi+'</TD><TD>'+d.xunShou+'</TD><TD>'+d.kongWang+'</TD><TD>'+d.maXing+'</TD>'+(isKe?'<TD></TD>':'')+'</TR>';
-  h+='<TR id="tdTitle"><TD>月将</TD><TD>年命</TD><TD>用神</TD><TD colspan="'+(isKe?3:2)+'">贵人</TD></TR>';
+  h+='<TR class="tdTitle"><TD>月将</TD><TD>年命</TD><TD>用神</TD><TD colspan="'+(isKe?3:2)+'">贵人</TD></TR>';
   h+='<TR><TD>'+d.yueJiang.name+'</TD><TD>'+(d.opts.nianMing||'子')+'</TD><TD>'+(d.opts.yongShen||d.riGz||'')+'</TD><TD colspan="'+(isKe?3:2)+'">'+(d.opts.guiRen||'阳贵')+' ('+(d.opts.gender||'男')+') '+(d.guiRen.sun?'顺':'逆')+'</TD></TR>';
     // 十神行置于四柱之上(与命理盘同序: 十神在上、四柱在下)
     h+='<TR><TD>十神</TD>';
     bzdy.bz.forEach((b, i) => {h+='<TD>'+(i===2?'日元':ssg[i])+'</TD>';});
     h+='</TR>';
     // 四柱标题+数据(紧接十神下方)
-    h+='<TR id="tdTitle"><TD>'+(isKe?'五柱':'四柱')+'</TD><TD class="sizhuTitle">年柱</TD><TD class="sizhuTitle">月柱</TD><TD class="sizhuTitle">日柱</TD><TD class="sizhuTitle">时柱</TD>'+(isKe?'<TD class="sizhuTitle">刻柱</TD>':'')+'</TR>';
+    h+='<TR class="tdTitle"><TD>'+(isKe?'五柱':'四柱')+'</TD><TD class="sizhuTitle">年柱</TD><TD class="sizhuTitle">月柱</TD><TD class="sizhuTitle">日柱</TD><TD class="sizhuTitle">时柱</TD>'+(isKe?'<TD class="sizhuTitle">刻柱</TD>':'')+'</TR>';
     h+='<TR><TD></TD>';
     h+='<TD class="sizhu sizhu-v" id="nianzhu">'+wxSpan(nianGz[0]||'')+'<br>'+wxSpan(nianGz[1]||'')+'</TD>';
     h+='<TD class="sizhu sizhu-v" id="yuezhu">'+wxSpan(yueGz[0]||'')+'<br>'+wxSpan(yueGz[1]||'')+'</TD>';

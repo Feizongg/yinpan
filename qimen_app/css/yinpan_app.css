@@ -815,3 +815,7 @@ body.mode-mingli{ --pan-fs-sz:20px; --pan-lh-sz:24px }
 #dayun_liunian .pan .liunian1{font-size:11px}
 /* 小运: 与大运同格式(字号/行高/字重一致) */
 #dayun_liunian .pan .xiaoyun{font-size:13px;line-height:17px;font-weight:bold;text-align:center;padding-top:4px;padding-bottom:2px}
+
+/* 穿壬盘表头用 class 版 —— 同一渲染里出现 3 个表头, 用 id 会重复;
+   本盘不在 #panHead 下, 故此处补上与 #tdTitle td 等价的配色。 */
+.tdTitle td{color:var(--c-gold)}
