@@ -277,6 +277,7 @@
         e2.innerHTML = '<font class="shishen">' + m.jie + '</font><br>' + m.jieM + '/' + m.jieD;
         e2.style.cursor = 'pointer';
         e2.setAttribute('data-ly-idx', String(i));
+        markSel(e2, i === pick);          /* 节气格与干支格同步高亮, 视觉一致 */
       }
     }
     return arr;
@@ -317,9 +318,10 @@
     if (!cur) return;
     let arr = window.baziLiuYue ? window.baziLiuYue(cur.year) : [];
     d.lyIdx = idx;
-    for (let i = 0; i < 12; i++) markSel(document.getElementById('liuyue1_' + i), i === idx);
-    /* 大运/流年若已超过当前 → 不显示流日(未来的日子尚不可断) */
-    if (cur.year > new Date().getFullYear()) { hideLiuri(); return; }
+    for (let i = 0; i < 12; i++) {
+      markSel(document.getElementById('liuyue1_' + i), i === idx);
+      markSel(document.getElementById('liuyue2_' + i), i === idx);   /* 节气格同步 */
+    }
     let m = arr[idx];
     if (!m) return;
     window.mingliLiuri(m.solarY, m.solarM, m.gz, cur.year);
@@ -338,7 +340,8 @@
     box.style.display = arr.length ? 'block' : 'none';
     if (!arr.length) { box.innerHTML = ''; return; }
     /* 默认选中: 该月正是当前月 → 选当前日; 否则选第 1 日 */
-    let now = new Date(), pick = 0;
+    /* 仅当所显示月份**正好是当前月**时才自动选中当下日期; 其他月一律不预选 */
+    let now = new Date(), pick = -1;
     if (y === now.getFullYear() && m === now.getMonth() + 1) {
       for (let i = 0; i < arr.length; i++) { if (arr[i].d === now.getDate()) { pick = i; break; } }
     }
