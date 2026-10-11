@@ -146,12 +146,6 @@
       catch (e) { return { yun: [], ln: [] }; }
     }
     function gzOfYun(k) { let o = bz.dayun[k] || {}; return o.gz || ((o.g || '') + (o.z || '')); }
-    function shaLine(arr) {
-      if (!arr || !arr.length) return '';
-      return '<div style="font-size:10px;line-height:1.25;color:var(--c-text-3)">' +
-        arr.slice(0, 3).map(function (s) { return window.termSpan ? window.termSpan('神煞', s) : s; })
-          .join('·') + '</div>';
-    }
 
     // 大运格高亮 + 悬停显示该运神煞
     for (let i = 0; i < 10; i++) {
@@ -183,12 +177,22 @@
       let y = ln[n * 10 + c];
       let e1 = document.getElementById('liunian1_' + c);
       let e2 = document.getElementById('liunian2_' + c);
-      if (!y) { if (e1) e1.innerHTML = ''; if (e2) e2.innerHTML = ''; continue; }
+      if (!y) {
+        if (e1) e1.innerHTML = '';
+        if (e2) e2.innerHTML = '';
+        let e0 = document.getElementById('liunian3_' + c);
+        if (e0) e0.innerHTML = '';
+        continue;
+      }
       let age = birthYear ? (y.year - birthYear + 1) : '';
       if (e1) e1.innerHTML = y.year + '<br>' + age + '岁';
-      if (e2) {
-        e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z) +
-          shaLine(shaCalc(curYunGz, (y.g || '') + (y.z || '')).ln);
+      if (e2) e2.innerHTML = ganSpan(y.g) + zhiSpan(y.z);
+      /* 流年神煞改到独立一行(liunian3_c), 不再挤在干支格里 */
+      let e3 = document.getElementById('liunian3_' + c);
+      if (e3) {
+        e3.innerHTML = shaCalc(curYunGz, (y.g || '') + (y.z || '')).ln.map(function (s2) {
+          return window.termSpan ? window.termSpan('神煞', s2) : s2;
+        }).join('<br>');
       }
     }
     data.yunIdx = n;
@@ -320,10 +324,14 @@
         h += '</TR></TABLE>';
 
         h += '<TABLE class="pan">';
-        h += '<TR><TD class="yunTitle" rowspan="2">流<br>年</TD>';
+        h += '<TR><TD class="yunTitle" rowspan="3">流<br>年</TD>';
         for (let c = 0; c < 10; c++) h += '<TD class="liunian1" id="liunian1_' + c + '"></TD>';
         h += '</TR><TR>';
         for (let c2 = 0; c2 < 10; c2++) h += '<TD class="liunian2" id="liunian2_' + c2 + '"></TD>';
+        /* 流年神煞单独占一行 —— 与顶部命理盘神煞栏同构(一格管一年, 格内纵向排列)。
+           此前塞在干支格(liunian2)里, 空间不足会与相邻内容重叠。 */
+        h += '</TR><TR>';
+        for (let c3 = 0; c3 < 10; c3++) h += '<TD class="liunian3" id="liunian3_' + c3 + '"></TD>';
         h += '</TR></TABLE></div>';
       }
 

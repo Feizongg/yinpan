@@ -46,11 +46,29 @@
     '中': 'background:var(--c-text-3,#888);color:#fff'
   };
 
+  /* 盘面显示用的是项目惯用的简称（国印/文昌/红艳/童子），
+     而释义表的键是全名（国印贵人/文昌贵人/红艳煞/童子煞）——
+     这里做一次归一把简称映射到释义键，否则这几条点了会显示"暂无释义"。 */
+  var ALIAS = {
+    '神煞': {
+      '国印': '国印贵人',
+      '文昌': '文昌贵人',
+      '红艳': '红艳煞',
+      '童子': '童子煞'
+    }
+  };
+
+  function resolveName(cat, name) {
+    var m = ALIAS[cat];
+    return (m && m[name]) ? m[name] : name;
+  }
+
   /* 主入口: showTermTip('神煞', '天乙贵人') */
   window.showTermTip = function (cat, name) {
     var cfg = CATS[cat] || CATS['神煞'];
     var table = (window.QM && window.QM[cfg.table]) || null;
-    var item = table ? table[name] : null;
+    var key = resolveName(cat, name);
+    var item = table ? table[key] : null;
     var ov = overlay();
 
     var h = '<div style="background:var(--c-bg,#fff);border-radius:12px;padding:16px;' +
@@ -109,7 +127,7 @@
   window.termSpan = function (cat, name, colorStyle, label) {
     var cfg = CATS[cat] || CATS['神煞'];
     var table = (window.QM && window.QM[cfg.table]) || null;
-    var item = table ? table[name] : null;
+    var item = table ? table[resolveName(cat, name)] : null;
     var st = 'cursor:pointer;';
     var attr = '';
     if (cfg.showJX && item && item.jx && JX_COLOR[item.jx]) {
