@@ -15776,19 +15776,63 @@ function _importJSON() {
   inp.click();
 }
 
+// 命理盘(panType 6)的 #btn1/#btn3/#btn2 处理函数 —— 见 _bindActionButtons 的分派
+/* ⚠️ 必须走 window.mingliBtn: 它负责 ringKind 记账(移星换斗/天门地户的互斥态)、
+   切换时收起八字盘、以及 clearWaipan 前置。此前这里被时盘的 showYixing/showState/
+   tianmenDihu 顶掉, 于是 qimen_mingli.js 的 mingliBtn 永不执行、ringKind 恒为 'none'。 */
+function _mingliYixingBtn() {
+  if (window.showMingliYixing) window.showMingliYixing();
+  if (window.mingliBtn) window.mingliBtn(1, window._mlData);
+}
+function _mingliStateBtn() {
+  if (window.mingliState) window.mingliState();
+  if (window.mingliBtn) window.mingliBtn(2, window._mlData);
+}
+function _mingliTianmenBtn() {
+  if (window.mingliBtn) window.mingliBtn(3, window._mlData);
+}
+
 // 修复动态innerHTML中的onclick: 用事件委托绑定
 function _bindActionButtons() {
-  // 底部操作按钮
+  // 底部操作按钮 —— 按盘型分派: 命理盘走 mingliBtn 路径, 其余盘型走各自的全局函数。
+  /* ⚠️ 这里是**唯一**一处程序化绑定点(覆盖 qimen_boot.js 的 rebind 所接管的版本):
+     命理盘按钮的内联属性写的是 showMingliYixing();mingliBtn(1,window._mlData),
+     rebind 解析后挂上的也是这条路 —— 若此处再按时盘的 showYixing 覆盖,
+     命理盘的按钮逻辑(ringKind 记账等)就整块变死代码。 */
   let btns = {
     '#btn1': showYixing, '#btn2': showState, '#btn3': tianmenDihu,
     '#btn4': ()=>shen12(1), '#btn5': ()=>shen12(2), '#btn6': ()=>shen12(3), '#btn7': ()=>shen12(4),
     '#btnXiangJu': ()=>{try{toggleXiangJu();}catch(e){tip.style.display='block';tip.innerHTML='<span style=color:red>选局错误:'+e.message+'</span>';}},
     '#preBtn': ()=>panChange(-1), '#nextBtn': ()=>panChange(1)
   };
-  for (let id in btns) {
+  /* 命理盘按钮的判据是**按钮自己所属的表格**(qimen_mingli.js 渲染时挂的 .ml-btns),
+     而不是 panType: 时盘/心盘/命理盘都有 #btn1..#btn3 同名同 id 的按钮, 而本函数每次
+     排盘后都会重跑 —— 只看 panType 时, "排过命理盘再切回时盘"会把命理盘的处理器留在
+     时盘按钮上(window._mlData 还在, 两个盘就串了; 实测踩过)。
+     ⚠️ 归属必须与处理器**在同一处**决定: 若先绑时盘表、再按"归属没变就跳过"补命理盘,
+        命理盘的 #btn1 会被时盘的 showYixing 抢先绑上且再也不会纠正。 */
+  let isMl = !!(document.querySelector('.ml-btns #btn1') && window._mlData);
+  let mlBtns = {
+    '#btn1': _mingliYixingBtn, '#btn2': _mingliStateBtn, '#btn3': _mingliTianmenBtn,
+    '#btnXiangJu': btns['#btnXiangJu'],
+    '#preBtn': btns['#preBtn'], '#nextBtn': btns['#nextBtn']
+  };
+  const ownerOf = el => {
+    /* 最内层的 table[id] 祖先: 命理盘渲染时挂了 .ml-btns, 是命理盘的唯一判据 */
+    let tbl = el.closest ? el.closest('table[id]') : null;
+    return tbl ? (tbl.id + (tbl.classList.contains('ml-btns') ? '#ml' : '')) : 'standalone';
+  };
+  const bind = (id, fn) => {
     let el = document.querySelector(id);
-    if (el && !el._bound) { el.onclick = btns[id]; el._bound = true; }
-  }
+    if (!el) return;
+    let own = ownerOf(el);
+    /* ⚠️ el._bound 的"一次性"语义不够: 只打标记、不记归属, 换了盘型不会重绑, 旧处理器
+       会被永久锁住 —— 故记下**绑定时的归属**, 归属变了就重绑(同一渲染内则不重复绑) */
+    if (el._bound && el._boundOwner === own) return;
+    el.onclick = (isMl && own.indexOf('#ml') > 0 && mlBtns[id]) ? mlBtns[id] : fn;
+    el._bound = true; el._boundOwner = own;
+  };
+  for (let id in btns) bind(id, btns[id]);
   _bindXnLongPress();
   // 宫位短按统一走 onGongShortPress(内联已挂, 见 buildPaipanGrid); 这里只兜底
   // 给没挂上的宫位补一次绑定, 并清掉可能残留的旧 showPalace 直连。

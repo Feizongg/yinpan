@@ -103,9 +103,11 @@
 
   /* ───────────────── 外圈 / 状态切换 (各按钮互斥高亮 / 再点取消) ───────────────── */
 
-  /** 按钮高亮: 3..7 互斥, 再点同一个则取消并清空外圈 */
+  /** 按钮高亮: 1(移星换斗) 与 3..7 互斥, 再点同一个则取消并清空外圈 */
   window.mingliBtn = function (b, data) {
-    let isRing = (b >= 3 && b <= 7);   // 神将按钮已下线, 保留分支不影响
+    /* 记账范围 = 互斥的外圈切换钮: 1(移星换斗) 与 3..7(神将/天门地户)。
+       b=2(长生状态)不在内 —— 它是**独立开关、不动外圈**, 不参与互斥也不记账。 */
+    let isRing = ((b >= 3 && b <= 7) || b === 1);
     let bz = document.getElementById('yixinghuandouDIV');   // 切神将时收起八字盘
     if (bz && bz.getAttribute('data-mode') === 'bazi') {
       bz.innerHTML = ''; bz.removeAttribute('data-mode'); bz.style.display = 'none';
@@ -116,6 +118,10 @@
       return 'none';
     }
     if (window.clearWaipan) { try { window.clearWaipan(); } catch (e) { if (window._logErr) window._logErr('clearWaipan', e && e.message); } }
+    /* ★ 记账: 此前**只有**取消分支写 ringKind('none'), 打开分支从不回写 ——
+       于是 data.ringKind 恒为 'none', 上面那个取消分支永远进不去(互斥/取消形同虚设)。
+       这是绑定竞态修好之后暴露出来的第二层: 光让按钮走到 mingliBtn 还不够。 */
+    if (isRing && data) data.ringKind = b;
     try {
       if (b === 3) { if (window.tianmenDihu) window.tianmenDihu(); }      // 天门地户
     } catch (e) { if (window._logErr) window._logErr('mingliBtn', e && e.message); }
@@ -248,14 +254,8 @@
           e2.setAttribute('data-ln-year', String(yy));
           markSel(e1, false); markSel(e2, false);
         }
-        if (e3) {
-          /* 小运段的第三行给该年的**小运**干支(与第三方流年表同构:
-             其表为「流年 / 干支 / 小运」三行); 大运段那第三行才是神煞。 */
-          let xyArr = (window.baziXiaoYun && data.bzFull)
-            ? window.baziXiaoYun(data.bzFull.pillars, data.gender, cnt) : [];
-          let xg = xyArr[c2] || '';
-          e3.innerHTML = xg ? (ganSpan(xg.charAt(0)) + zhiSpan(xg.charAt(1))) : '';
-        }
+        /* 小运段的第三行**留空** —— 按需求不再显示小运干支(大运段那一行才是神煞)。 */
+        if (e3) e3.innerHTML = '';
       }
       /* 自动选中流年: 当前年若落在小运段内则选它, 否则选**第一个**流年 */
       let nowYY = new Date().getFullYear(), pickLn = 0;
@@ -711,8 +711,11 @@
         /* 颜色说明已上移到主盘内, 见上方 baziMainRows 调用处 */
       }
 
-      /* 操作按钮(移星换斗/天门地户/长生状态) —— 按需求放在交运说明之上 */
-      h += '<TABLE id="btnTable1"><TR>';
+      /* 操作按钮(移星换斗/天门地户/长生状态) —— 按需求放在交运说明之上。
+         class="ml-btns" 是给 _bindActionButtons 认盘的**唯一判据**: 命理盘与其它盘型的
+         #btn1/#btn2/#btn3 同名同 id, 只靠 panType 判断会在"排过命理盘再切回时盘"
+         时把命理盘的处理器错挂到时盘按钮上(实测踩过)。 */
+      h += '<TABLE id="btnTable1" class="ml-btns"><TR>';
       h += '<TD><div class="btn" id="btn1" onclick="showMingliYixing();mingliBtn(1,window._mlData);">移星换斗</div></TD>';
       h += '<TD><div class="btn" id="btn3" onclick="mingliBtn(3,window._mlData);">天门地户</div></TD>';
       h += '<TD><div class="btn" id="btn2" onclick="mingliState();mingliBtn(2,window._mlData);">长生状态</div></TD>';

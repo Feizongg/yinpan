@@ -201,131 +201,92 @@ window.chuanRenChart= opts => {
   };
 };
 
-// === 八字大运计算 (基于tyme4j) ===
+// === 八字大运计算 (口径统一: 委托 tyme4ts) ===
+/* 本函数原先自算起运岁数/十神/十二长生 —— 三处同源出错, 且都与项目基准(tyme4ts)不同源:
+     ① 起运 取 solarDay.getTerm().next(1): 那是**中气**(如立秋→处暑), 应取**节**(→白露);
+        顺行、逆行两支都错, 实测约 68% 的生辰起运年与 baziChart 不一致(偏差 −10…+5 年),
+        整张"大运 + 流年 + 交运"表随之错位;
+     ② 十神 用五行生克自排分支, 与 tyme getTenStar 呈整齐互换
+        (食←袅、伤←印、才←杀、财←官、杀←才、官←财、枭←食、印←伤), 90 组中 80 组不符;
+        且偏印写作"袅"(U+8885), 与 qimen_bazi.js 的 SHISHEN_ABBR("枭")、释义表键("偏印")都不一致;
+     ③ 十二长生 CS/CS_YANG/CS_YIN 起点错(甲/丁/己/庚/癸 各 12/12 全错, 120 格错 70 格),
+        表内还有错别字("淋浴"应为"沐浴"、"库"应为"墓", 释义表 ZHANGSHENG_TIPS 的键正是"沐浴/墓")。
+   现不再自算: 整体委托 window.baziChart(qimen_bazi.js —— 同一套 tyme 口径, 已与第三方逐项对拍
+   一致), 这里只做一层字段适配。**返回的字段名/类型/语义与原先保持一致**
+   (穿壬盘 renderChuanRen 与命理盘 mingliChart 都按这些字段取值)。 */
 window.computeBaZiDaYun= opts => {
   opts=opts||{};
   let yr=opts.year,mo=opts.month,dy=opts.day,hr=opts.hour;
   let gender=opts.gender||'男';
-  let st=T.SolarTime.fromYmdHms(yr,mo,dy,hr,0,0);
-  let sch=st.getSixtyCycleHour();
-  let yGz=sch.getYear(),mGz=sch.getMonth(),dGz=sch.getDay(),hGz=sch.getSixtyCycle();
+  /* 唯一数据来源: 完整八字盘 —— 四柱/十神/藏干/纳音/地势/自坐/空亡/大运均由 tyme 算 */
+  if(!window.baziChart)throw new Error('computeBaZiDaYun 依赖 qimen_bazi.js 的 baziChart(tyme 口径)');
+  let bzFull=window.baziChart({year:yr,month:mo,day:dy,hour:hr,minute:opts.minute||0,gender:gender});
+  let G2='甲乙丙丁戊己庚辛壬癸',Z2='子丑寅卯辰巳午未申酉戌亥';
 
-  // 四柱
-  let bz=[yGz,mGz,dGz,hGz].map(gz => {
-    return {gz:gz.getName(),g:gz.getHeavenStem().getName(),z:gz.getEarthBranch().getName(),
-      gIdx:gz.getHeavenStem().getIndex(),zIdx:gz.getEarthBranch().getIndex()};
+  // 四柱 (字段同原先: gz/g/z/gIdx/zIdx)
+  let bz=bzFull.pillars.map(p => {
+    return {gz:p.gz,g:p.gan,z:p.zhi,gIdx:G2.indexOf(p.gan),zIdx:Z2.indexOf(p.zhi)};
   });
 
-  // 年干顺逆
-  let nianGan=bz[0].gIdx; // 0=甲...9=癸
-  let isYangNian=nianGan%2===0; // 甲丙戊庚壬为阳年
+  // 年干顺逆: 阳年男/阴年女顺行(实测与 tyme DecadeFortune 的实际方向完全一致)
+  let isYangNian=bz[0].gIdx%2===0; // 甲丙戊庚壬为阳年
   let isMale=gender==='男';
   let shun=(isYangNian&&isMale)||(!isYangNian&&!isMale)?'顺':'逆';
 
-  // 起运岁数: 计算到下一个/上一个节气的时间差
-  let solarDay=T.SolarDay.fromYmd(yr,mo,dy);
-  let term=solarDay.getTerm();
-  let jqTime=term.getJulianDay(); // 上一节气儒略日
-  let birthJD=solarDay.getJulianDay();
-  let jqDiff;
-  if(shun==='顺'){
-    let nextTerm=term.next(1);
-    jqDiff=Math.abs(nextTerm.getJulianDay()-birthJD);
-  } else {
-    jqDiff=Math.abs(birthJD-jqTime);
-  }
-  let qiYunSui=Math.floor(jqDiff/3); // 3天=1岁
-  let qiYunMonth=Math.floor((jqDiff%3)*4); // 余数*4=月数
-  let qiYunYear=yr+qiYunSui;
-  let yueGan=bz[1].g, yueZhi=bz[1].z;
+  /* 起运: 直接取 tyme ChildLimit 的结果 —— "顺行到下一个节 / 逆行到上一个节"以及
+     3天=1岁、1天=4月、1时辰=10天 的折算全由它内部完成, 不再拿节气儒略日相减 */
+  let jy=bzFull.jiaoYun;
+  /* 大运**年份标签**与命理盘同口径: 取 baziChart.dayun[1].year(干支年口径)。
+     原因: baziChart 自身 jiaoYun.year(公历口径) 与 dayun[i].year(干支年口径) 在
+     "交运日落在立春前"的约一成生辰上本就相差 1 年, 而命理盘的大运年份标签用的是后者;
+     此处对齐后者, 两盘年份标签才能完全一致。起运**岁数/月/日**仍取 jy(ChildLimit)。 */
+  let qiYunYear=(bzFull.dayun && bzFull.dayun[1] && bzFull.dayun[1].year) || jy.year;
+  let qiYunSui=jy.y, qiYunMonth=jy.m, qiYunDay=jy.d;
 
-  // 大运排列 (8步)
-  let G2='甲乙丙丁戊己庚辛壬癸',Z2='子丑寅卯辰巳午未申酉戌亥';
+  // 大运 10 步: 干支取 tyme 的九步 DecadeFortune, 第 10 步按其顺逆再推一位
+  let step=shun==='顺'?1:-1;
+  let lastGz=bzFull.dayun[bzFull.dayun.length-1].gz;
   let dayun=[];
-  for(let i=1;i<=10;i++){
-    let gIdx=G2.indexOf(yueGan);
-    let zIdx=Z2.indexOf(yueZhi);
-    if(shun==='顺'){
-      gIdx=(gIdx+i)%10; zIdx=(zIdx+i)%12;
-    } else {
-      gIdx=(gIdx-i+10)%10; zIdx=(zIdx-i+12)%12;
-    }
-    let dyAge=qiYunSui+(i-1)*10, dyYear=qiYunYear+(i-1)*10;
-    dayun.push({
-      gz:G2[gIdx]+Z2[zIdx], g:G2[gIdx], z:Z2[zIdx],
-      age:dyAge, year:dyYear
-    });
+  for(let i=0;i<10;i++){
+    let gz=(i<9)?bzFull.dayun[i+1].gz:T.SixtyCycle.fromName(lastGz).next(step).getName();
+    dayun.push({gz:gz,g:gz[0],z:gz[1],age:qiYunSui+i*10,year:qiYunYear+i*10});
   }
 
-  // 纳音
-  let nayin=bz.map(b => {return T.SixtyCycle.fromName(b.gz).getSound().getName();});
+  /* 十神: 一律走 tyme getTenStar(简称表与 qimen_bazi.js 的 SHISHEN_ABBR 同表, 偏印作"枭") */
+  let dayGan=T.HeavenStem.fromName(bz[2].g);
+  let SS_ABBR={'比肩':'比','劫财':'劫','食神':'食','伤官':'伤','偏财':'才',
+               '正财':'财','七杀':'杀','正官':'官','偏印':'枭','正印':'印'};
+  function ssOf(gan){return SS_ABBR[dayGan.getTenStar(T.HeavenStem.fromName(gan)).getName()]||'';}
+  let shishen=bzFull.pillars.map(p => ssOf(p.gan));   // 日柱对自身 = 比肩
 
-  // 藏干
+  /* 藏干: 表与字序保持原样(渲染顺序依赖它); 藏干十神取 baziChart 同柱的 cang(逐字对齐,
+     不再按五行自排) —— tyme 的 HideHeavenStem 与本表所列藏干完全相同, 只是排列次序不同 */
   let cangGanMap=QM.CANG_GAN||{子:'癸',丑:'癸辛己',寅:'甲丙戊',卯:'乙',辰:'乙戊癸',巳:'丙庚戊',午:'丁己',未:'乙己丁',申:'庚壬戊',酉:'辛',戌:'辛丁戊',亥:'壬甲'};
-  let cangGan=bz.map(b => {return cangGanMap[b.z]||'';});
-
-  // 十神 (以日干为基准)
-  let wxMap=QM.WX_MAP||{甲:2,乙:2,丙:3,丁:3,戊:4,己:4,庚:5,辛:5,壬:1,癸:1};
-  let rgWx=wxMap[bz[2].g], rgYin=bz[2].gIdx%2===0?1:0;
-  let shishen=bz.map(b => {
-    let twx=wxMap[b.g], tyin=b.gIdx%2===0?1:0;
-    if(twx===rgWx)return tyin===rgYin?'比':'劫';
-    let d=(rgWx-twx+5)%5;
-    if(d===4)return tyin===rgYin?'袅':'印';
-    if(d===1)return tyin===rgYin?'食':'伤';
-    if(d===2)return tyin===rgYin?'才':'财';
-    if(d===3)return tyin===rgYin?'杀':'官';
-    return '';
+  let cangGan=bzFull.pillars.map(p => {return cangGanMap[p.zhi]||'';});
+  let cgSS=[];
+  bzFull.pillars.forEach((p, i) => {
+    let shenOf={}; (p.cang||[]).forEach(c => {shenOf[c.gan]=c.shen;});
+    let cs=cangGan[i]||'';
+    for(let j=0;j<3;j++){let ch=cs[j]; cgSS.push(ch?(shenOf[ch]||ssOf(ch)):'');}
   });
 
-  // 十二长生 helper
-  let CS=['长生','淋浴','冠带','临官','帝旺','衰','病','死','库','绝','胎','养'];
-  let CS_YANG={甲:0,丙:2,戊:2,庚:6,壬:8}; // 阳干长生地支index(0=亥)
-  let CS_YIN={乙:6,丁:8,己:8,辛:0,癸:4};  // 阴干长生地支index(0=亥, reverse)
-  function getCS(gan, zhi){
-    let gIdx2=G2.indexOf(gan), zIdx2=Z2.indexOf(zhi);
-    let isYang=gIdx2%2===0;
-    let csStart=isYang?CS_YANG[gan]:CS_YIN[gan];
-    if(csStart===undefined)return '';
-    let offset=(zIdx2-csStart+12)%12;
-    if(!isYang)offset=(12-offset)%12;
-    return CS[offset];
-  }
-
-  // 地势: 各柱地支对日干的长生状态
-  let dishi=bz.map(b => {return getCS(bz[2].g, b.z);});
-
-  // 自坐: 各柱地支对自己天干的长生状态
-  let zizuo=bz.map(b => {return getCS(b.g, b.z);});
-
-  // 空亡: 各柱旬空(旬由"地支索引-天干索引"的差值唯一确定, 与 chuanRenChart 的 kwMap 口径一致)
-  let xunKong=bz.map(b => {
-    let kwMap={0:['戌','亥'],2:['子','丑'],4:['寅','卯'],6:['辰','巳'],8:['午','未'],10:['申','酉']};
-    let p=kwMap[((b.zIdx-b.gIdx)%12+12)%12]||['子','丑'];
-    return p[0]+p[1];
-  });
+  // 纳音 / 地势 / 自坐 / 空亡: 全部取 baziChart(地势=日干对该柱地支, 自坐=本柱天干对该支)
+  let nayin=bzFull.pillars.map(p => {return p.naYin;});
+  let dishi=bzFull.pillars.map(p => {return p.diShi;});
+  let zizuo=bzFull.pillars.map(p => {return p.ziZuo;});
+  let xunKong=bzFull.pillars.map(p => {return p.kong;});
 
   // 五行色统一走 QM.wxSpan(qimen_constants.js 的单字表), 不再自备色表
   function wxSpanBZ(ch){return QM.wxSpan?QM.wxSpan(ch):ch;}
 
-  // 大运十神
-  let dayunSS=dayun.map(dy => {
-    let twx=wxMap[dy.g], tyin=(G2.indexOf(dy.g)%2===0)?1:0;
-    if(twx===rgWx)return (tyin===rgYin?'比':'劫');
-    let d=(rgWx-twx+5)%5;
-    if(d===4)return tyin===rgYin?'袅':'印';
-    if(d===1)return tyin===rgYin?'食':'伤';
-    if(d===2)return tyin===rgYin?'才':'财';
-    if(d===3)return tyin===rgYin?'杀':'官';
-    return '';
-  });
+  // 大运十神(大运天干 vs 日干, 同走 tyme getTenStar)
+  let dayunSS=dayun.map(o => ssOf(o.g));
 
-  // 流年: 从起运年开始80年 (年干支= (year-4)%60)
+  // 流年: 从起运年开始 100 年(10 步大运 × 10 年), 干支取 tyme 的干支年
   let liuNian=[];
   for(let ln=0;ln<100;ln++){
     let lnYear=qiYunYear+ln;
-    let idx=(lnYear-4)%60;
-    let lnGz=T.SixtyCycle.fromIndex(idx).getName();
+    let lnGz=T.SixtyCycleYear.fromYear(lnYear).getSixtyCycle().getName();
     liuNian.push({year:lnYear, gz:lnGz, g:lnGz[0], z:lnGz[1]});
   }
 
@@ -334,28 +295,10 @@ window.computeBaZiDaYun= opts => {
   let curDY=0;
   for(let di=0;di<dayun.length;di++){if(curYear>=dayun[di].year){curDY=di;}}
 
-  // 交运信息: 起运年的天干
-  let jiaoYunGan=G2[(qiYunYear-4)%10]; // 起运年的年干
-  let qiYunDesc='出生后'+qiYunMonth+'个月起大运，每逢'+wxSpanBZ(jiaoYunGan)+'年交运';
-
-  // 藏干十神
-  let cgSS=[];
-  bz.forEach((b, i) => {
-    let cs=cangGan[i]||'';
-    for(let j=0;j<cs.length;j++){
-      let ch=cs[j]; if(ch===' '||!ch)continue;
-      let chIdx=G2.indexOf(ch);
-      let twx2=wxMap[ch]||0, tyin2=(chIdx>=0&&chIdx%2===0)?1:0;
-      if(twx2===rgWx)cgSS.push(tyin2===rgYin?'比':'劫');
-      else{let d2=(rgWx-twx2+5)%5;
-        if(d2===4)cgSS.push(tyin2===rgYin?'袅':'印');
-        else if(d2===1)cgSS.push(tyin2===rgYin?'食':'伤');
-        else if(d2===2)cgSS.push(tyin2===rgYin?'才':'财');
-        else if(d2===3)cgSS.push(tyin2===rgYin?'杀':'官');
-      }
-    }
-    while(cgSS.length<(i+1)*3)cgSS.push('');
-  });
+  // 交运信息: 出生后多久起运 + 交运年天干/交运月日(口径与命理盘的交运行一致)
+  let jiaoYunGan=jy.gan; // 交运年的年干(tyme ChildLimit 给出)
+  let qiYunDesc='出生后'+qiYunSui+'年'+(qiYunMonth?qiYunMonth+'个月':'')+(qiYunDay?qiYunDay+'日':'')+
+    '起大运，每逢'+wxSpanBZ(jiaoYunGan)+'年'+jy.month+'月'+jy.day+'日前后交运';
 
   return {
     bz:bz, shun:shun, nayin:nayin, cangGan:cangGan, shishen:shishen, cgSS:cgSS,

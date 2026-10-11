@@ -6,8 +6,10 @@
 ## 项目概况
 
 - 路径: Linux 开发机 `~/src/daojiayinpan`(原 `~/文档/奇门排盘`); Windows 工作副本 `D:\src\daojiayinpan`(构建链见下文"Windows 本地构建链打通"),作者 地天泰,仓库 github.com/wrz1911/daojiayinpan
-- 五种盘型:1=时盘 2=刻盘 3=心盘 4=山向 5=穿壬;纯 HTML+JS 前端,Tauri 2 桌面 + Capacitor Android,当前版本 **1.4.7**(Android versionCode 10407; APK versionName 为完整三段(1.4.7), 2026-09-28 起不再截断)
-- 前端:qimen_app/yinpan.html + css/yinpan_app.css + 4 个自有 IIFE JS(qimen_constants.js 112 行 / qimen_engine_min.js 475 行 / qimen_chuanren.js 617 行 / **yinpan_app.js 2800+ 行**)由 scripts/build_bundle.sh(cat 拼接 + esbuild --minify --target=es2017)合成 qimen_bundle.min.js(~149KB);tyme4j-browser.js 日历库;gong_detail_data.js(258KB 宫位详解)懒加载
+- 六种盘型:1=时盘 2=刻盘 3=心盘 4=山向 5=穿壬 6=命理;纯 HTML+JS 前端,Tauri 2 桌面 + Capacitor Android,当前版本 **1.4.7**(Android versionCode 10407; APK versionName 为完整三段(1.4.7), 2026-09-28 起不再截断)
+- 前端:qimen_app/yinpan.html + css/yinpan_app.css + 11 个自有 JS(tyme4j-browser.js 5196 行 / qimen_boot.js 221 行 / qimen_constants.js 142 行 / qimen_engine_min.js 480 行 / qimen_chuanren.js 603 行 / qimen_mingli.js 875 行 / qimen_bazi.js 792 行 / qimen_click_tips.js 158 行 / qimen_shensha_tips.js 387 行 / qimen_term_tips.js 226 行 / **yinpan_app.js 17023 行 / 1.19 MB**)由 scripts/build.sh bundle(cat 拼接 + esbuild --minify --target=es2020,已不含独立 tyme4j 请求)合成 qimen_bundle.min.js(~1.4 MB);tyme4j-browser.js 已并入 bundle;gong_detail_data.js(258KB 宫位详解)懒加载
+- **命理盘(qimen_mingli.js)**: 以出生时间排盘看命 —— 九宫 + 大运/流年/流月/流日/流时逐级下钻, 神煞/十神/长生/纳音都走点击委托弹释义。
+- **术语点击释义**: qimen_click_tips.js 接管盘面名词点击(overlay + Esc/点背景/关闭三种关法), 数据取自两个释义表 qimen_shensha_tips.js(神煞)与 qimen_term_tips.js(十神/长生/纳音)。
 - **yinpan_app IIFE 是 strict 模式——未声明赋值必抛 ReferenceError,历史踩过 4 次同类雷(h/ag/agColor/fw,均被 catch 吞掉表现为功能无反应)。ESLint(eslint.config.js,no-undef/no-redeclare error 级)已设防,0 errors;44 个 no-unused-vars warning 是历史遗留未清理。**注意 `npx eslint .` 会因 tyme4j/ 子目录的 eslint.config.mjs 缺 typescript-eslint 而崩,必须用 `npx eslint qimen_app/js/*.js`**
 - 网页版:gh-pages 部署 https://wrz1911.github.io/daojiayinpan/(CI release job 构建 bundle 后由 peaceiris/actions-gh-pages 部署,与 exe 直链共存;根 index.html 重定向到 qimen_app/yinpan.html)
 
