@@ -13819,7 +13819,14 @@ function buildPaipanGrid(palaces, kongGongs, maPosId, agColorFn, opts) {
     let menAbbr = (window.MEN_ABBR||{})[p.men] || p.men || '';
     let kongMark = kongGongs[g] ? '○' : '';
     function spanGan(ch) { let isM=MU_RULES[g]&&MU_RULES[g].indexOf(ch)>=0; let isX=XING_RULES[g]&&XING_RULES[g].indexOf(ch)>=0; let isXM=XM_RULES[g]&&XM_RULES[g].indexOf(ch)>=0; return window._siHaiSpan(ch, isX||isXM, isM||isXM); }
-    function charColor(str) { if(!str)return''; let r=''; for(let ci=0;ci<str.length;ci++)r+=spanGan(str[ci]); return r; }
+    /* 逐字着色的 span 必须显式 float:none —— #tian/#di 自身是 .panItem 的行首 span,
+       CSS 用**后代**选择器 .panItem span:nth-of-type(1){float:left}/(2){float:right} 做基线
+       对齐, 会连这里塞进 #tian/#di 内部的 .cx-mu/.cx-xing span 一起 float 化:
+         · 两字只第二个字带色(如 2026-10-12 12:23 时盘的巽4 "丁辛", 辛入墓)时, 那个字被
+           float 到行首, "丁辛" 渲染成 "辛丁", 与宫格外侧的阴干紧贴成"四个字"的观感;
+         · 两字都带色时, 内部第 2 个 span 又被 nth-of-type(2) float:right, 两字被推向两端。
+       内部 span 只承担颜色, 压掉 float 后逐字顺序即等于 DOM 顺序。 */
+    function charColor(str) { if(!str)return''; let r=''; for(let ci=0;ci<str.length;ci++)r+=spanGan(str[ci]).replace(/^<span /,'<span style="float:none" '); return r; }
     let hlt = (xpEditGong === g) ? 'box-shadow:0 0 0 2px var(--c-theme) inset;' : '';
     // noClick: 副盘(移星换斗的 7 个旋转盘、向角度选局的 13 个盘)不挂宫位点击 ——
     // 它们复用同一份宫位 id, 点击会被 showPalace 按"主盘"的数据解释(心盘模式下
