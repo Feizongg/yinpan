@@ -320,7 +320,10 @@ window.computeBaZiDaYun= opts => {
   return {
     bz:bz, shun:shun, nayin:nayin, cangGan:cangGan, shishen:shishen, cgSS:cgSS,
     dishi:dishi, zizuo:zizuo, xunKong:xunKong,
-    qiYunSui:qiYunSui, qiYunMonth:qiYunMonth, qiYunYear:qiYunYear,
+    /* qiYunDay 必须导出: :317 的 qiYunDesc 用了它, 但此前 return 漏掉, 调用方永远读到 undefined
+       —— 与 tyme ChildLimit 逐例对拍 3280 例时, 岁/月 100% 一致而"日"100% 落在 undefined,
+       补上后公开契约才对得上(内部 baziChart().jiaoYun 一直是准的)。 */
+    qiYunSui:qiYunSui, qiYunMonth:qiYunMonth, qiYunDay:qiYunDay, qiYunYear:qiYunYear,
     dayun:dayun, dayunSS:dayunSS, liuNian:liuNian, curDY:curDY, curYear:curYear,
     qiYunDesc:qiYunDesc, wxSpanBZ:wxSpanBZ
   };

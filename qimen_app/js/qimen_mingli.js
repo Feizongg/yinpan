@@ -374,9 +374,15 @@
     /* 起点: 第一个流年(即出生年)自**出生所在的节气月**起 —— 之前那些月份不能算,
        如 1992-12-06 生于亥月, 该年流月只有 亥/子/丑 三个月。 */
     let start = 0;
-    let byY = window.Y || 0;
+    /* ★ 判"这是出生那一年"必须用**出生干支年**: year 传进来的一律是干支年(与 mingliPickYear
+       的小运段、mingliYun 的小运段同基准)。此前用 window.Y(出生**公历**年) —— 立春前出生时
+       两者差 1, 于是出生那一年既不被识别(画满 12 格)、也不自出生月起算。
+       ⚠️ 但**构造出生日期只能用公历年 window.Y**: 上面 arr 里的 solarY 是公历年,
+       拿干支年当日期年份会把出生日期整体前移一年, 一个节气月都对不上 → start 恒为 0。
+       birthGZYear 缺失时逐级兜底(公历年 → 0), 不抛错。 */
+    let byY = (window._mlData && window._mlData.bzFull && window._mlData.bzFull.birthGZYear) || window.Y || 0;
     if (year === byY) {
-      let bd = new Date(byY, (window.M || 1) - 1, window.D || 1);
+      let bd = new Date(window.Y || 0, (window.M || 1) - 1, window.D || 1);
       for (let i = arr.length - 1; i >= 0; i--) {
         let st = new Date(arr[i].solarY, arr[i].solarM - 1, arr[i].jieD);
         if (bd >= st) { start = i; break; }
@@ -474,7 +480,11 @@
     let cur = null;
     let dyAll = (d.bzFull && d.bzFull.dayun) ? d.bzFull.dayun : [];
     if ((d.yunIdx || 0) === 0) {
-      let byM = (d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0;
+      /* ★ 与 mingliPickYear / mingliYun 的小运段**同基准**: 必须取**干支年** birthGZYear。
+         此前取公历年 d.qr.gongli —— 立春前出生时它比干支年大 1, 于是小运段点出来的
+         整年流月/流日全部错位一年(A3 2026-01-01: 点"干支年2025"却出 2026 年的流日)。 */
+      let byM = (d.bzFull && d.bzFull.birthGZYear) ||
+                ((d.qr && d.qr.gongli ? parseInt(dec(d.qr.gongli).slice(0, 4), 10) : 0) || window.Y || 0);
       cur = { year: byM + (d.lnIdx || 0) };
     } else {
       let segM = dyAll[d.yunIdx || 0];

@@ -15478,7 +15478,13 @@ function _doSave() {
   let _p2 = function(v){ return String(v).padStart(2,'0'); };
   let timeStr = Y+'-'+_p2(M)+'-'+_p2(D)+' '+_p2(hr)+':'+_p2(mn)+':00';
   if (window._nongliFull) timeStr += ' ('+window._nongliFull+')';
-  let params = {year:Y, month:M, day:D, hour:hr, minute:mn, panType:panType};
+  /* ★ 命理记录必须把**性别/姓名**一起存进 params: 回放时要按同一组参数重算命理盘,
+     才能恢复数据对象 window._mlData(见 loadSaved)。此前只存时间 —— 回放后只有视觉
+     DOM 被换回, 数据对象仍是上一张盘, 点大运/流年/流月就整表串到别的盘上(且不报错)。 */
+  let _mlGEl = document.getElementById('mlGender'), _mlNEl = document.getElementById('mlName');
+  let params = {year:Y, month:M, day:D, hour:hr, minute:mn, panType:panType,
+                gender: _mlGEl ? _mlGEl.value : (_mlVals ? _mlVals.gender : '男'),
+                name: _mlNEl ? _mlNEl.value : (_mlVals ? _mlVals.name : '')};
   if (panType === 4) {
     let sdEl=document.getElementById('selShanXiangDeg'), syEl=document.getElementById('selShanXiangYear');
     params._xjuDegSaved = _xjuDegSaved || (sdEl?sdEl.value:'');
@@ -15636,6 +15642,55 @@ function loadSaved(i) {
       if (sdEl && _xjuDegSaved) sdEl.value = _xjuDegSaved;
     }
     document.getElementById('panWrap').innerHTML = r.html;
+    /* ★ 命理盘: 上面这行只恢复了**视觉**。数据对象 window._mlData 仍由上一次 doMingli
+       写入(即"当前"那张盘), 而大运格的内联属性、流年/流月/流日的事件委托全都读它 ——
+       于是回放 A(当前是 B)后点大运/流年/流月会去改 B 的表: 流年表被整表换成 B 的十年、
+       lnIdx 被写坏, 盘面 A/B 混拼且**无任何报错**(静默错乱)。
+       这里按记录的 params 重算并把 DOM 一并重绘, 让两者同源。
+       老记录可能没有 gender/name(乃至没有完整时间) → 从存档 html 里的
+       id="name"/id="gender" 回读, 再退回当前面板值/默认值; 任何异常都不外抛。 */
+    if (r.mode === 'mingli' && window.mingliChart && window.renderMingli) {
+      try {
+        let hp = {};
+        if (r.html) {
+          let mN = /id="name"[^>]*>([^<]*)</.exec(r.html);
+          let mG = /id="gender"[^>]*>([^<]*)</.exec(r.html);
+          if (mN) hp.name = mN[1];
+          if (mG) hp.gender = mG[1];
+        }
+        let mp = {
+          year: p.year || Y, month: (p.month != null ? p.month : M),
+          day: p.day || D, hour: (p.hour != null ? p.hour : hr),
+          minute: (p.minute != null ? p.minute : mn),
+          gender: p.gender || hp.gender || (_mlVals && _mlVals.gender) || '男',
+          name: p.name || hp.name || (_mlVals && _mlVals.name) || ''
+        };
+        let d2 = window.mingliChart(mp);
+        window._mlData = d2;
+        _mlVals = {name: mp.name, gender: mp.gender};
+        let mbox = document.getElementById('mlInputs');
+        if (!mbox && window.renderMingliInputs) {
+          // doMingli 会在 #panWrap 前插一个常驻输入面板 —— 回放路径此前不走 doMingli, 这里照做
+          let pw0 = document.getElementById('panWrap');
+          if (pw0 && pw0.parentNode) {
+            mbox = document.createElement('div'); mbox.id = 'mlInputs';
+            pw0.parentNode.insertBefore(mbox, pw0);
+          }
+        }
+        if (mbox) {
+          mbox.style.display = 'block';
+          if (window.renderMingliInputs) mbox.innerHTML = window.renderMingliInputs(_mlVals);
+        }
+        document.getElementById('panWrap').innerHTML = window.renderMingli(d2, null);
+        if (window.mingliYun) window.mingliYun(d2.yunIdx || 0, d2);
+        [0,120,400,900].forEach(function(t){ setTimeout(function(){ if(window.mingliFixLayout) window.mingliFixLayout(); }, t); });
+      } catch (e) {
+        /* 重算失败(老记录参数不全等) → 至少不能留着一张**别的盘**的数据对象:
+           置空后命理盘的下钻点击变成无操作, 而不是改错盘。 */
+        window._mlData = null;
+        _logErr('loadSaved.mingli', e && e.message);
+      }
+    }
     document.getElementById('result').style.display = 'block';
     _closeSheet();
     let yhd = document.getElementById('yixinghuandouDIV');
