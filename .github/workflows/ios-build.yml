@@ -1,0 +1,110 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build:bundle
+
+      - name: Prepare web assets
+        shell: bash
+        run: |
+          mkdir -p www/qimen_app/css www/qimen_app/js
+
+          cat > www/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport"
+              content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh"
+              content="0;url=qimen_app/yinpan.html">
+            <script>
+              window.location.replace('qimen_app/yinpan.html');
+            </script>
+          </head>
+          <body></body>
+          </html>
+          EOF
+
+          cp qimen_app/css/yinpan_app.min.css \
+            www/qimen_app/css/yinpan_app.css
+
+          cp qimen_app/js/qimen_bundle.min.js \
+            www/qimen_app/js/
+
+          cp qimen_app/js/gong_detail_data.js \
+            www/qimen_app/js/
+
+          cp qimen_app/yinpan.html \
+            www/qimen_app/
+
+      - name: Install Capacitor iOS
+        run: npm install --legacy-peer-deps @capacitor/ios@^8.5.2
+
+      - name: Generate iOS project
+        run: npx cap add ios
+
+      - name: Sync iOS project
+        run: npx cap sync ios
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -e
+
+          APP="build/DerivedData/Build/Products/Release-iphoneos/App.app"
+
+          if [ ! -d "$APP" ]; then
+            echo "ERROR: App.app was not generated"
+            exit 1
+          fi
+
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+
+          cd build/ipa
+          /usr/bin/zip -qr ../yinpan-unsigned.ipa Payload
+
+      - name: Upload iOS build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yinpan-ios-build
+          path: |
+            build/yinpan-unsigned.ipa
+            build/DerivedData/Logs/Build/**
+          if-no-files-found: warn
+          retention-days: 7
