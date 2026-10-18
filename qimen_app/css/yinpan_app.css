@@ -166,34 +166,44 @@ input,textarea{outline:none;-webkit-user-select:text;user-select: text}
 
 /* ===== 3. 应用覆盖样式 (yinpan_app.css) ===== */
 /* ===== iPhone 刘海屏 / 灵动岛安全区域适配 ===== */
-
 :root {
-    /* 根据设备实际安全区域动态获取顶部间距 */
     --safe-area-top: env(safe-area-inset-top, 0px);
-
-    /* 六种排盘模式栏的固定高度 */
     --top-bar-height: 34px;
 }
+/* 页面整体 */
 body {
-    font-family: "Microsoft YaHei", "PingFang SC",
-        "Noto Sans CJK SC", sans-serif;
-    background: var(--c-bg);
-    margin: 0;
-
-    /* 保留原有底部安全区域设置 */
-    padding-bottom: calc(
-        44px + env(safe-area-inset-bottom, 24px)
-    );
-
-    /* 页面内容从模式栏下方开始 */
-    padding-top: calc(
-        var(--top-bar-height) + var(--safe-area-top)
-    );
+    padding-top: 0;
 }
-#topBar{position:fixed;top:var(--safe-area-top);left:0;right:0;height:var(--safe-area-top);background:var(--c-bg);border-bottom:1px solid var(--c-border);z-index:1000;max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:0 2px;box-sizing:border-box}
+/* 顶部六种排盘模式 */
+#topBar {
+    position: fixed;
+    /* 自动避开刘海及灵动岛 */
+    top: var(--safe-area-top);
+    left: 0;
+    right: 0;
+    height: var(--top-bar-height);
+    box-sizing: border-box;
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border);
+    z-index: 1000;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 2px;
+}
+
 #topBar label{display:flex;align-items:center;justify-content:center;gap:2px;height:100%;padding:0 4px;font-size:13px;line-height:1;color:var(--c-text);cursor:pointer;white-space:nowrap}
 #topBar input[type=radio]{margin:0;width:13px;height:13px;flex:none;accent-color:var(--c-theme)}
-#mainDIV{max-width:600px;margin:0 auto;padding:0}
+/* 排盘主体 */
+#mainDIV {
+    position: relative;
+    /* 主体整体位于顶部栏下方 */
+    margin-top: calc(
+        var(--safe-area-top) + var(--top-bar-height)
+    );
+}
 /* 项目禁用文字复制: 通配符那条(第 64 行)已把全站设为 none, 这里原先又把
    #mainDIV 整棵子树改回 text 把复制打开了, 现改回 none。
    输入类控件仍保留可选中, 否则无法输入/编辑。 */

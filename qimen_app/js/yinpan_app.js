@@ -15947,13 +15947,7 @@ function _renderBottomBar() {
     sb.style.cssText = 'cursor:pointer;color:var(--c-theme);font-size:14px;display:flex;align-items:center;gap:4px';
     sb.innerHTML = '<span style="font-size:16px">&#128190;</span>保存';
     sb.addEventListener('click', function(e){e.stopPropagation();savePan();});
-    let ab = document.createElement('span');
-    ab.id = 'barAboutBtn';
-    ab.style.cssText = 'cursor:pointer;color:var(--c-text-2);font-size:14px;display:flex;align-items:center;gap:4px';
-    ab.innerHTML = '<span style="font-size:16px">&#8505;</span>关于';
-    ab.addEventListener('click', function(e){e.stopPropagation();showAbout();});
     bar.appendChild(hb);
-    bar.appendChild(ab);
     bar.appendChild(sb);
   } catch(e){ _logErr('bottomBar', e && e.message); }
 }
