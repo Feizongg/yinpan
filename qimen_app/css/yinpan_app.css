@@ -165,13 +165,32 @@ input,textarea{outline:none;-webkit-user-select:text;user-select: text}
 #attention{height:10px;line-height:25px;color:red;text-align:center}
 
 /* ===== 3. 应用覆盖样式 (yinpan_app.css) ===== */
-body{font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;background:var(--c-bg);margin:0;padding-bottom:calc(44px + env(safe-area-inset-bottom, 24px))}
-body{padding-top:34px}
-/* 顶部模式栏: 六个盘型切换常驻顶部, 高度压到 34px 以免占地方。
-   背景与底部栏同一片色、同样 600px 居中; 下沿加一条分隔线, 与底部栏的
-   上沿边框上下对称 —— 不画线时顶栏和盘头都是白底, 会糊成一片分不出层次。
-   (原先这里是一条 36px 的空装饰条, 切换器另占内容区一整行) */
-#topBar{position:fixed;top:0;left:0;right:0;height:34px;background:var(--c-bg);border-bottom:1px solid var(--c-border);z-index:1000;max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:0 2px;box-sizing:border-box}
+/* ===== iPhone 刘海屏 / 灵动岛安全区域适配 ===== */
+
+:root {
+    /* 根据设备实际安全区域动态获取顶部间距 */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+
+    /* 六种排盘模式栏的固定高度 */
+    --top-bar-height: 34px;
+}
+body {
+    font-family: "Microsoft YaHei", "PingFang SC",
+        "Noto Sans CJK SC", sans-serif;
+    background: var(--c-bg);
+    margin: 0;
+
+    /* 保留原有底部安全区域设置 */
+    padding-bottom: calc(
+        44px + env(safe-area-inset-bottom, 24px)
+    );
+
+    /* 页面内容从模式栏下方开始 */
+    padding-top: calc(
+        var(--top-bar-height) + var(--safe-area-top)
+    );
+}
+#topBar{position:fixed;top:var(--safe-area-top);left:0;right:0;height:var(--safe-area-top);background:var(--c-bg);border-bottom:1px solid var(--c-border);z-index:1000;max-width:600px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:0 2px;box-sizing:border-box}
 #topBar label{display:flex;align-items:center;justify-content:center;gap:2px;height:100%;padding:0 4px;font-size:13px;line-height:1;color:var(--c-text);cursor:pointer;white-space:nowrap}
 #topBar input[type=radio]{margin:0;width:13px;height:13px;flex:none;accent-color:var(--c-theme)}
 #mainDIV{max-width:600px;margin:0 auto;padding:0}
